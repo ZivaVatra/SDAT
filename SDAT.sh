@@ -1,7 +1,32 @@
 #!/bin/bash
 
 # SDAT - Scanned document archival tool
-
+#
+#Copyright 2013 Ziva-Vatra, Belgrade
+#(www.ziva-vatra.com, mail: ziva_vatra@nerdshack.com)
+#
+# Project URL: http://www.ziva-vatra.com/index.php?aid=71&id=U29mdHdhcmU=
+# Project REPO: https://github.com/ZivaVatra/SDAT
+#
+#Licensed under the GNU GPL. Do not remove any information from this header
+#(or the header itself). If you have modified this code, feel free to add your
+#details below this (and by all means, mail me, I like to see what other people
+#have done)
+#
+#This program is free software; you can redistribute it and/or
+#modify it under the terms of the GNU General Public License (version 2)
+#as published by the Free Software Foundation.
+#
+#This program is distributed in the hope that it will be useful,
+#but WITHOUT ANY WARRANTY; without even the implied warranty of
+#MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#GNU General Public License for more details.
+#
+#You should have received a copy of the GNU General Public License
+#along with this program; if not, write to the Free Software
+#Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#
+#
 # This is a script for archival of Documents/Bills/Invoices/etc...
 # It scans the page, runs OCR on the text, and saves the text to the comment field in the metadata
 # This allows indexing engines (e.g. Desktop search) to know what text the document contains, allowing
@@ -19,6 +44,8 @@
 #	* The language is hardcoded to english for OCR
 #	* metadata uses ASCII (not sure if possible to use unicode)
 #
+
+#-------------- BEGIN CODE --------------
 
 TPATH=./tmp/
 
