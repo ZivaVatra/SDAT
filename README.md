@@ -19,6 +19,7 @@ Requirements:
     Exiv2 image metadata library (for adding text to comment field)
 	imageMagick tools (FORMAT CONVERSION)
 
+<pre>
 Usage:
 	* There must be a "./tmp" and "./scans" folder in the CWD.
 	
@@ -35,4 +36,4 @@ Usage:
 Known bugs:
 	* Script will accept a blank file name, which it shouldn't.
 	* Script won't check and create the needed temp folders
-
+</pre>
