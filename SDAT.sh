@@ -48,9 +48,9 @@
 #-------------- BEGIN CODE --------------
 
 TPATH=./tmp/
-
+DEVICE="epkowa:interpreter:001:006"  #Change to your own scanner type (find it out with 'scanimage -L' )
 function scanit {
-        scanimage  -p --format=tiff --mode $1 --resolution $2 > $TPATH/$3
+        scanimage  -p --format=tiff --mode $1 -d $DEVICE --resolution $2 > $TPATH/$3
 }
 
 function 600dpi_col {
@@ -66,7 +66,7 @@ function 1200dpi_gr {
 }
 
 function ocrit {
-         tesseract $TPATH/$1 $TPATH/$2 -l eng
+         tesseract $TPATH/$1 $TPATH/$2 -l eng -psm 1
 }
 
  function topng {
