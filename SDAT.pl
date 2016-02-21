@@ -76,7 +76,11 @@ sub bgexe {
 }
 
 sub reset_scanner {
-	system("./reset-epsonv330");
+	my $rc =  system("./reset-epsonv330") );
+	if ( $rc != 0 ) {
+		print "WARNING: Could not run ./reset-epsonv330 to reset the USB bus. Attempting to continue, but next scan may hang...";
+		return 0;
+	}
 	$DEVICE=`scanimage -L | awk '{ print \$2 }'`;
 	$DEVICE =~ s/\`//;
 	$DEVICE =~ s/\'//;
