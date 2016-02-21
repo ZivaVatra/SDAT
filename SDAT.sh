@@ -39,18 +39,8 @@
 #	Exiv2 image metadata library (for adding text to comment field)
 #	imageMagick tools (FORMAT CONVERSION)
 #
-
-# Current Limitations:
-#	* The language is hardcoded to english for OCR
-#	* metadata uses ASCII (not sure if possible to use unicode)
-#
-
-#-------------- BEGIN CODE --------------
-
-TPATH=./tmp/
-DEVICE="epkowa:interpreter:001:006"  #Change to your own scanner type (find it out with 'scanimage -L' )
 function scanit {
-        scanimage  -p --format=tiff --mode $1 -d $DEVICE --resolution $2 > $TPATH/$3
+        scanimage  -v -p --format=tiff --mode $1 -d $DEVICE --resolution $2 > $TPATH/$3
 }
 
 function 600dpi_col {
@@ -66,7 +56,7 @@ function 1200dpi_gr {
 }
 
 function ocrit {
-         tesseract $TPATH/$1 $TPATH/$2 -l eng -psm 1
+         tesseract --tessdata-dir /usr/share/tessdata/ $TPATH/$1 $TPATH/$2 -l eng -psm 1
 }
 
  function topng {
@@ -87,7 +77,8 @@ function waituntildone {
 		sleep 2;
 	done
 }
-
+DEVICE="epkowa:interpreter:001:007"
+TPATH="/tmp/scanning/"
 RANDSTR=`head -c 20 /dev/urandom  | md5sum | cut -d' ' -f 1`
 FINALDST="./scans/"
 NAME=$1; #filename
