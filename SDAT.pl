@@ -60,7 +60,12 @@ $NAME =~ s/\n//g;
 
 sub exe {
     my $cmd = shift;
-    die("Could not execute $cmd, quitting\n") unless ( 0 == system($cmd) );
+	if ( -f "./env.sh") {
+		print "Using environement source\n";
+	    die("Could not execute $cmd, quitting\n") unless ( 0 == system("source ./env.sh && $cmd") );
+	} else {
+	    die("Could not execute $cmd, quitting\n") unless ( 0 == system($cmd) );
+	}
 }
 
 sub bgexe {
@@ -76,7 +81,7 @@ sub bgexe {
 }
 
 sub reset_scanner {
-	my $rc =  system("./reset-epsonv330") );
+	my $rc =  system("./reset-epsonv330");
 	if ( $rc != 0 ) {
 		print "WARNING: Could not run ./reset-epsonv330 to reset the USB bus. Attempting to continue, but next scan may hang...";
 		return 0;
@@ -107,7 +112,7 @@ sub scanit {
 	sleep 1;
 	while ((time() - $time) < 60 ) {
 		if ( waitpid($pid,1) == -1 ) { 
-			print '\n';
+			printf('\n');
 			return(0); 
 		}
 		sleep 1;
@@ -169,7 +174,8 @@ sub waituntildone {
 	return waitpid($pid,0) ;
 }
 
-exe("read -p  \"Hit enter to scan (filename: $NAME ), CTRL-C to cancel\"");
+print("Hit enter to scan (filename: $NAME ), CTRL-C to cancel");
+$_ = <STDIN>;
 
 #Create the tmpdir if it doesn't exist
 unless (-e $TPATH) { mkdir($TPATH); }
