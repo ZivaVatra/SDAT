@@ -6,10 +6,7 @@ It scans the page, runs OCR on the text, and saves the text to the comment field
 
 This allows indexing engines (e.g. Desktop search) to know what text the document contains, allowing
 for easier searching, while keeping the original text+format as an image scan.
-It saves a PNG file into the $FINALDST folder
-
-For full information, see the original web page:
-	http://www.ziva-vatra.com/index.php?aid=71&id=U29mdHdhcmU=
+It saves a PNG file into the output folder
 
 ----
 
@@ -21,19 +18,11 @@ Requirements:
 
 <pre>
 Usage:
-	* There must be a "./tmp" and "./scans" folder in the CWD.
-	
-	* You have to edit the script $DEVICE variable, and put in which device you want to use. For example, if I run "scanimage -L":
-	 	device `v4l:/dev/video0' is a Noname UNKNOWN/GENERIC virtual device
-	 	device `epkowa:interpreter:001:006' is a Epson Perfection V330 Photo flatbed scanner
-	  Then use the bits in the quotes as your device. 
-	
-	* The script will auto-detect rotation of script, so you don't have to worry about it
-	
 	* Run the script as follows:
-		./SDAT.sh $Name_of_scan
-
-Known bugs:
-	* Script will accept a blank file name, which it shouldn't.
-	* Script won't check and create the needed temp folders
+		./SDAT.py $filename $final_output_dir
+	* The script will auto-detect rotation of text, so you don't have to worry about it
+	* The script will also create the target folder if necessary
+	* By default the script writes tmpfiles to /tmp/scanning
+	* However each job has its own Unique ID, so you can run multiple scripts in parallel, they use the same folder, but will not interfere with each other
+	
 </pre>
