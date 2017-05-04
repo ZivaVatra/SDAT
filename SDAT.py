@@ -72,19 +72,30 @@ def bgexe(cmd):
 	return os.spawnl(os.P_NOWAIT, cmd)
 
 
-def scanit(mode, resolution, output):
+def scanit(mode, resolution, output, fail=False):
 
 	print "Waiting for scanning to finish"
-	data = subprocess.check_output([
-		"scanimage",
-		"-v",
-		"-p",
-		"--format=tiff",
-		"--mode", mode,
-		"-d", get_device(),
-		"--resolution",
-		str(resolution)
-	])
+	try:
+		data = subprocess.check_output([
+			"scanimage",
+			"-v",
+			"-p",
+			"--format=tiff",
+			"--mode", mode,
+			"-d", get_device(),
+			"--resolution",
+			str(resolution)
+		])
+	except subprocess.CalledProcessError as e:
+		if fail is False:
+			print "Got Error %s. Attempting to re-detect scanner" % e
+			os.unlink("./devicename")
+			get_device()
+			return scanit(mode, resolution, output, True)
+		else:
+			print "Still unable to scan. Aborting execution."
+			raise(e)
+
 	with open(output, 'w') as fd:
 		fd.write(data)
 
