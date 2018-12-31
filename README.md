@@ -21,19 +21,14 @@ Requirements:
 
 <pre>
 Usage:
-	* There must be a "./tmp" and "./scans" folder in the CWD.
-	
-	* You have to edit the script $DEVICE variable, and put in which device you want to use. For example, if I run "scanimage -L":
-	 	device `v4l:/dev/video0' is a Noname UNKNOWN/GENERIC virtual device
-	 	device `epkowa:interpreter:001:006' is a Epson Perfection V330 Photo flatbed scanner
-	  Then use the bits in the quotes as your device. 
-	
-	* The script will auto-detect rotation of script, so you don't have to worry about it
-	
+	* There must be a "./scans" folder in the CWD. This is where the results are saved
+	* The script will attempt to scan and use the first found scanning device
+	* You may need to set TESS_DATADIR variable to something other than the default, as this varies
+	by tesseract version (and distro package)
+
 	* Run the script as follows:
 		./SDAT.sh $Name_of_scan
 
 Known bugs:
 	* Script will accept a blank file name, which it shouldn't.
-	* Script won't check and create the needed temp folders
 </pre>

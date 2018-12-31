@@ -42,6 +42,9 @@
 
 use warnings;
 use POSIX "sys_wait_h";
+
+
+$NAME=shift or die("Usage: $0 \$target_scan_filename\n"); #filename, first argument given to script
 # Global vars
 
 $TPATH="/tmp/scanning/";
@@ -55,7 +58,6 @@ $RANDSTR=`head -c 20 /dev/urandom  | md5sum | cut -d' ' -f 1`;
 $RANDSTR =~ s/\n//g;
 
 $FINALDST="./scans/";
-$NAME=shift; #filename, first argument given to script
 $NAME =~ s/\n//g;
 
 sub exe {
@@ -142,7 +144,7 @@ sub s1200dpi_gr {
 sub ocrit {
 	my $input_image = shift;
 	my $output_text = shift;
-    return bgexe("tesseract $input_image $output_text --tessdata-dir /usr/share/tessdata/  -l eng ");
+    return bgexe("tesseract $input_image $output_text --tessdata-dir /usr/share/tesseract-ocr/  -l eng ");
 }
 
 sub topng {
