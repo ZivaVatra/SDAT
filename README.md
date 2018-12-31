@@ -22,7 +22,7 @@ Requirements:
 <pre>
 Usage:
 	* There must be a "./scans" folder in the CWD. This is where the results are saved
-	* The script will attempt to scan and use the first found scanning device
+	* The script will attempt to scan and use the first found scanning device. It will then save this in a file in CWD called "devicename". You can delete this to force re-detection, or put your own (valid) ID in there to override the autodetection.
 	* You may need to set TESS_DATADIR variable to something other than the default, as this varies
 	by tesseract version (and distro package)
 
