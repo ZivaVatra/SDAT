@@ -27,8 +27,8 @@ Usage:
 	by tesseract version (and distro package)
 
 	* Run the script as follows:
-		./SDAT.sh $Name_of_scan
+		./SDAT.sh $Name_of_scan_file
 
-Known bugs:
-	* Script will accept a blank file name, which it shouldn't.
+	On success the script will display the scanned file. You don't have to do anything to confirm, you can just close the display. The file is saved no matter what.
+
 </pre>
