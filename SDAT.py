@@ -103,6 +103,8 @@ def scanit(mode, resolution, output, fail=False):
 def s600dpi_col(output):
 	scanit("color", 600, output)
 
+def s1200dpi_col(output):
+	scanit("color", 1200, output)
 
 def s600dpi_gr(output):
 	scanit("gray", 600, output)
@@ -118,7 +120,7 @@ def ocrit(input_image, output_text_file, lang="eng"):
 		input_image,
 		output_text_file.replace('.txt', ''),
 		"--tessdata-dir",
-		"/usr/share/tessdata/",
+		"/usr/share/tesseract-ocr/",
 		"-l",
 		lang
 	])
@@ -175,11 +177,11 @@ if __name__ == "__main__":
 	if not os.path.exists(os.path.join(TPATH, "scan_col")):
 		os.mkdir(os.path.join(TPATH, "scan_col"))
 
-	s600dpi_gr(grayfile)
+	s1200dpi_gr(grayfile)
 
 	# 2. Scan the colour image we will store
 	colfile = os.path.join(TPATH, "scan_col", RANDSTR + ".tif")
-	s600dpi_col(colfile)
+	s1200dpi_col(colfile)
 
 	textfile = os.path.join(TPATH, "scan_txt" + RANDSTR + ".txt")
 	ocrpid = ocrit(grayfile, textfile)
