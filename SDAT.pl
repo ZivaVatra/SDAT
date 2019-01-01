@@ -166,14 +166,14 @@ sub waituntildone {
 	return waitpid($pid,0) ;
 }
 
-print("Hit enter to scan (filename: $NAME ), CTRL-C to cancel");
-$_ = <STDIN>;
+#print("Hit enter to scan (filename: $NAME ), CTRL-C to cancel");
+#$_ = <STDIN>;
 
 #Create the tmpdir if it doesn't exist
 unless (-e $TPATH) { mkdir($TPATH); }
 
-#1. Scan the image (gray for OCR)
-scanit("gray",$SCAN_DPI,"$TPATH/scan_gr.$RANDSTR.tif");
+#1. Scan the image (gray for OCR). This is always done at 1200dpi
+scanit("color",600,"$TPATH/scan_ocr.$RANDSTR.tif");
 
 #2. Scan the colour image we will store
 my $scanpid = fork();
@@ -184,7 +184,7 @@ if ($scanpid == 0) {
 
 
 #3 ocr the image
-ocrit("$TPATH/scan_gr.$RANDSTR.tif","$TPATH/scan_txt.$RANDSTR");
+ocrit("$TPATH/scan_ocr.$RANDSTR.tif","$TPATH/scan_txt.$RANDSTR");
 
 #4 wait for the color scan to finish
 waituntildone($scanpid);
