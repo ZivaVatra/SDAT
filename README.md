@@ -6,10 +6,7 @@ It scans the page, runs OCR on the text, and saves the text to the comment field
 
 This allows indexing engines (e.g. Desktop search) to know what text the document contains, allowing
 for easier searching, while keeping the original text+format as an image scan.
-It saves a PNG file into the $FINALDST folder
-
-For full information, see the original web page:
-	http://www.ziva-vatra.com/index.php?aid=71&id=U29mdHdhcmU=
+It saves a PNG file into the output folder
 
 ----
 
@@ -21,6 +18,7 @@ Requirements:
 
 <pre>
 Usage:
+
 	* There must be a "./scans" folder in the CWD. This is where the results are saved
 	* The script will attempt to scan and use the first found scanning device. It will then save this in a file in CWD called "devicename". You can delete this to force re-detection, or put your own (valid) ID in there to override the autodetection.
 	* You may need to set TESS_DATADIR variable to something other than the default, as this varies
