@@ -45,7 +45,11 @@ use POSIX "sys_wait_h";
 
 
 $NAME=shift or die("Usage: $0 \$target_scan_filename\n"); #filename, first argument given to script
-# Global vars
+
+
+# Global variablesa
+$SCAN_DPI=600;
+$WAIT_TIMEOUT=180;  # In seconds
 
 $TPATH="/tmp/scanning/";
 $DEVICE=`scanimage -L | awk '{ print \$2 }'`;
@@ -112,13 +116,11 @@ sub scanit {
 	my $time = time();
 	print "Waiting for scanning to finish\n";
 	sleep 1;
-	while ((time() - $time) < 60 ) {
-		if ( waitpid($pid,1) == -1 ) { 
-			printf('\n');
-			return(0); 
+	while ((time() - $time) < $WAIT_TIMEOUT ) {
+		if ( waitpid($pid,1) == -1 ) {
+			return(0);
 		}
 		sleep 1;
-		print '.';
 	}
 
 	print "Error! Timeout exceeded! Killing and continuing...\n";
@@ -171,12 +173,12 @@ $_ = <STDIN>;
 unless (-e $TPATH) { mkdir($TPATH); }
 
 #1. Scan the image (gray for OCR)
-scanit("gray",1200,"$TPATH/scan_gr.$RANDSTR.tif");
+scanit("gray",$SCAN_DPI,"$TPATH/scan_gr.$RANDSTR.tif");
 
 #2. Scan the colour image we will store
 my $scanpid = fork();
 if ($scanpid == 0) {
-	scanit("color",1200,"$TPATH/scan_col.$RANDSTR.tif");
+	scanit("color",$SCAN_DPI,"$TPATH/scan_col.$RANDSTR.tif");
 	exit();
 }
 
