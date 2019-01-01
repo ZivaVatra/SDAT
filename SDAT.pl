@@ -183,7 +183,7 @@ $_ = <STDIN>;
 unless (-e $TPATH) { mkdir($TPATH); }
 
 #1. Scan the image (gray for OCR)
-s600dpi_gr("$TPATH/scan_gr.$RANDSTR.tif");
+scanit("gray",1200,"$TPATH/scan_gr.$RANDSTR.tif");
 
 #2. Scan the colour image we will store
 my $scanpid = fork();
