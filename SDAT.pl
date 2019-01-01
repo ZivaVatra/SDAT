@@ -129,18 +129,6 @@ sub scanit {
 	return(0);
 }
 
-sub s600dpi_col {
-    scanit("color",600,$_[0]);
-}
-
-sub s600dpi_gr {
-    scanit("gray",600,$_[0]);
-}
-
-sub s1200dpi_gr {
-     scanit("gray",1200,$_[0]);
-}
-
 sub ocrit {
 	my $input_image = shift;
 	my $output_text = shift;
@@ -188,9 +176,9 @@ scanit("gray",1200,"$TPATH/scan_gr.$RANDSTR.tif");
 #2. Scan the colour image we will store
 my $scanpid = fork();
 if ($scanpid == 0) {
-	s600dpi_col("$TPATH/scan_col.$RANDSTR.tif");
+	scanit("color",1200,"$TPATH/scan_col.$RANDSTR.tif");
 	exit();
-} 
+}
 
 
 #3 ocr the image
