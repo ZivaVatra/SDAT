@@ -1,4 +1,4 @@
-#!/bin/env perl
+#!/usr/bin/perl
 # vim: ts=4 ai
 # SDAT - Scanned document archival tool
 #
@@ -41,33 +41,34 @@
 #
 
 use warnings;
+use strict;
 use POSIX "sys_wait_h";
 
 
-$NAME=shift or die("Usage: $0 \$target_scan_filename\n"); #filename, first argument given to script
+my $FINALDST=shift or die("Usage: $0 \$target_folder \$target_scan_filename\n"); #destination, first argument given to script
+my $NAME=shift or die("Usage: $0 \$target_folder \$target_scan_filename\n"); #filename, second argument given to script
 
 
-# Global variablesa
-$SCAN_DPI=600;
-$WAIT_TIMEOUT=180;  # In seconds
+# Global variables
+my $SCAN_DPI=600;
+my $WAIT_TIMEOUT=180;  # In seconds
 
-$TPATH="/tmp/scanning/";
-$DEVICE=`scanimage -L | awk '{ print \$2 }'`;
+my $TPATH="/tmp/scanning/";
+my $DEVICE=`scanimage -L | awk '{ print \$2 }'`;
 $DEVICE =~ s/\`//;
 $DEVICE =~ s/\'//;
 $DEVICE =~ s/\n//;
 print "Using Device: $DEVICE\n";
 
-$RANDSTR=`head -c 20 /dev/urandom  | md5sum | cut -d' ' -f 1`;
+my $RANDSTR=`head -c 20 /dev/urandom  | md5sum | cut -d' ' -f 1`;
 $RANDSTR =~ s/\n//g;
 
-$FINALDST="./scans/";
 $NAME =~ s/\n//g;
 
 sub exe {
     my $cmd = shift;
 	if ( -f "./env.sh") {
-		print "Using environement source\n";
+		print "Using environment source\n";
 	    die("Could not execute $cmd, quitting\n") unless ( 0 == system("source ./env.sh && $cmd") );
 	} else {
 	    die("Could not execute $cmd, quitting\n") unless ( 0 == system($cmd) );
