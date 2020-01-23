@@ -16,12 +16,11 @@ Usage:
 ----
 
 
-* There must be a "./scans" folder in the CWD. This is where the results are saved
 * The script will attempt to scan and use the first found scanning device. It will then save this in a file in CWD called "devicename". You can delete this to force re-detection, or put your own (valid) ID in there to override the autodetection.
 * You may need to set TESS_DATADIR variable to something other than the default, as this varies by tesseract version (and distro package)
 * There are other options you can change by editing the script. A common one is $SCAN_DPI, the higher the DPI the more accurate the OCR (and the higher quality archive copy you keep), but it takes longer to scan and uses more space. The default is set to 600dpi, as this is the best archive quality vs space I found for my needs.
 * Run the script as follows:
-<code> ./SDAT.sh $Name_of_output_file </code> (You don't have to put the extension, it is done automatically).
+<code> ./SDAT.pl $target_folder $Name_of_output_file </code> (You don't have to put the extension, it is done automatically). A real world example I use is <code>./SDAT.pl /storage/backups/scanned_documents/2020/ energy_bill_page_1</code> as that way I can grep documents by year, which is good enough for me.
 
 On success the script will display the scanned file. You don't have to do anything to confirm, you can just close the display. The file is saved no matter what.
 
@@ -42,4 +41,4 @@ Here are some gotchas I have come across when using this system:
 
 * Make sure you have enough space in "/tmp". This software makes use of /tmp to store both the "final scan" copy, and the "OCR scan" copy, plus any temporarily files for the OCR. On a 600dpi scan this means you could use a good 500MB of data in temp files. If you run out of space half way through a scan it can get messy (you get errors that indicate failure, but not that the reason may be lack of free space). 
 
-* Leading from above, the software will delete its temporarily files from /tmp in the case of a successful scan and OCR. However if you cancel the program, or something raises an error, it does not delete the tmpfiles (this is useful for debugging). As such be aware you may have leftover datafiles using up space in /tmp that you may want to clear out. 
+* Leading from above, the software will delete its temporarily files from /tmp in the case of a successful scan and OCR. However if you cancel the program, or something raises an error, it does not delete the tmpfiles (this is useful for debugging). As such be aware you may have leftover datafiles using up space in /tmp that you may want to clear out. For many distros tmps is a ramdisk (tmpfs) so should be cleared on reboot, but for those where it isn't, you can accumulate a lot of wasted space.

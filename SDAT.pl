@@ -54,6 +54,17 @@ my $SCAN_DPI=600;
 my $WAIT_TIMEOUT=180;  # In seconds
 
 my $TPATH="/tmp/scanning/";
+if (! -d $TPATH) {
+	print("Creating temporary path\n");
+	mkdir($TPATH);
+}
+if (! -d $FINALDST) {
+	print("Creating output path\n");
+	mkdir($FINALDST);
+}
+
+
+
 my $DEVICE=`scanimage -L | awk '{ print \$2 }'`;
 $DEVICE =~ s/\`//;
 $DEVICE =~ s/\'//;
