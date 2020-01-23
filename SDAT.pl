@@ -185,15 +185,17 @@ sub waituntildone {
 unless (-e $TPATH) { mkdir($TPATH); }
 
 #1. Scan the image (gray for OCR). This is always done at 1200dpi
-scanit("color",600,"$TPATH/scan_ocr.$RANDSTR.tif");
+scanit("color",$SCAN_DPI,"$TPATH/scan_ocr.$RANDSTR.tif");
 
 #2. Scan the colour image we will store
 my $scanpid = fork();
 if ($scanpid == 0) {
-	scanit("color",$SCAN_DPI,"$TPATH/scan_col.$RANDSTR.tif");
+	# scanit("color",$SCAN_DPI,"$TPATH/scan_col.$RANDSTR.tif");
+	# So we removed the duel scanning, and just copying the original. It
+	# is good enough for OCR, and makes the whole thing faster
+	system("cp $TPATH/scan_ocr.$RANDSTR.tif $TPATH/scan_col.$RANDSTR.tif");
 	exit();
 }
-
 
 #3 ocr the image
 ocrit("$TPATH/scan_ocr.$RANDSTR.tif","$TPATH/scan_txt.$RANDSTR");
