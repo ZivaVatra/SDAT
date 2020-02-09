@@ -43,6 +43,7 @@
 use warnings;
 use strict;
 use POSIX "sys_wait_h";
+use File::Path "make_path";
 
 
 my $FINALDST=shift or die("Usage: $0 \$target_folder \$target_scan_filename\n"); #destination, first argument given to script
@@ -56,11 +57,11 @@ my $WAIT_TIMEOUT=180;  # In seconds
 my $TPATH="/tmp/scanning/";
 if (! -d $TPATH) {
 	print("Creating temporary path\n");
-	mkdir($TPATH);
+	make_path($TPATH);
 }
 if (! -d $FINALDST) {
 	print("Creating output path\n");
-	mkdir($FINALDST);
+	make_path($FINALDST);
 }
 
 
