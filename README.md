@@ -38,6 +38,8 @@ SDAT:
 On success the script will display the scanned file. You don't have to do anything to confirm, you can just close the display. The file is saved no matter what.
 
 SDAT_ADF:
+-----
+
 * Run the script as follows:
 <code> ./SDAT_ADF.pl $target_folder $output_file_suffix </code> 
 A real world example I use is <code>./SDAT_ADF.pl /storage/backups/scanned_documents/2020/ energy_bill</code>.
