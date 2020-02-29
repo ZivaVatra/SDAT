@@ -54,9 +54,11 @@ my $NAME=shift or die("Usage: $0 \$target_folder \$target_scan_filename\n"); #fi
 # Global variables
 my $SCAN_DPI=600;
 # Extra options for scanimage, for specific scanners
-my $EXTRAOPTS=" --ald=no --df-action Stop --swdeskew=no --swcrop=no ";
+my $EXTRAOPTS=" --ald=no --df-action Stop --swdeskew=no --swcrop=no --buffermode On --prepick On ";
 # These extra opts are for A4 paper size (defined as 210x297mm
 $EXTRAOPTS .= " --page-height 320 --page-width 211 -x 211 -y 300 ";
+#And these for A5 (defined as 148 x 210mm)
+#$EXTRAOPTS .= " --page-height 211 --page-width 150 -x 150 -y 211 ";
 
 
 my $TPATH="/tmp/scanning/";
@@ -110,10 +112,10 @@ sub scanit_adf {
 	my $o_folder = $_[2];
 	my $o_pattern = $_[3];
 
-	# Sometimes scanimage hangs, so we have to fork again, and monitor with timeout (60 seconds?)
-	return system(
+	die("Could not scan!\n") unless (0 == system(
 		"scanimage -v -p --format=tiff $EXTRAOPTS --mode $mode -d \"$DEVICE\" --resolution $resolution --source \"ADF Duplex\" --batch=$o_folder/$o_pattern\_%02d.tiff"
-	) or die ("could not scan!\n");
+	));
+	return 0;
 }
 
 sub ocrit {
@@ -160,8 +162,12 @@ sub process_file {
 	addComment("$dirs/$filename.txt","$dirs/$pngfile");
 
 	exe("mv -v $dirs/$pngfile $FINALDST/");
+	# Once all done, remove the infile
+	unlink($_infile);
 
-	return system("display -sample 750 $FINALDST/$pngfile");
+	# TODO, make this an option
+	#return system("display -sample 750 $FINALDST/$pngfile");
+	return 0;
 }
 	
 
@@ -170,29 +176,53 @@ sub process_file {
 unless (-e "$TPATH/scan.$RANDSTR/") { make_path("$TPATH/scan.$RANDSTR/"); }
 
 # 1. Scan the images to a temporary folder
-scanit_adf("color",$SCAN_DPI,"$TPATH/scan.$RANDSTR/", $RANDSTR);
+# As this can take a while, we fork
+my $pid = fork();
+if ($pid == 0) {
+	exit(scanit_adf("color",$SCAN_DPI,"$TPATH/scan.$RANDSTR/", $RANDSTR));
+}
 
-#2. Loop through images, for each one do the OCR, and move to dest
-my @outfiles = `find $TPATH/scan.$RANDSTR/*.tiff`;
-my @pids;
-foreach(@outfiles) {
-	s/\n//g;
-	print("Processing image $_\n");
-	
-	my $pid = fork();
-	if ($pid == 0) {
-		exit(process_file($_));
-	} else {
-		push(@pids, $pid);
-	}
+#While the above is scanning, we sit and wait for files to be created,
+# Then process them as they arrive
+my $counter = 3;
+while(1) {
+	sleep(5); # 5 second wait
+
+	#2. Loop through images, for each one do the OCR, and move to dest
+	my @outfiles = `find $TPATH/scan.$RANDSTR/*.tiff 2>/dev/null`;
+	my @pids;
 		
-}
+	# As long as the scanning pid is not dead, reset
+	# counter
+	if (waitpid($pid, WNOHANG) != -1) {
+		$counter = 3;
+	}
 
-print("Waiting for pid:");
-foreach(@pids) {
-	print(" $_");
-	waituntildone($_);
-}
-print(" Finished!\n");
+	foreach(@outfiles) {
+		# Every time we have a file, we reset the counter
+		s/\n//g;
+		print("Processing image $_\n");
+	
+		my $pid = fork();
+		if ($pid == 0) {
+			exit(process_file($_));
+		} else {
+			push(@pids, $pid);
+		}
+			
+	}
+	
+	print("Waiting for processing pid:");
+	foreach(@pids) {
+		print(" $_");
+		waituntildone($_);
+	}
+	if ($counter-- <= 0) {
+		print(" Finished!\n");
+		# We have reached end of coutdown with no files
+		# and dead scanning PID, quit loop
+		last;
+	}
+}	
 # When all is done, remove tmp folder
 exe("rm -rv $TPATH/scan.$RANDSTR/");
