@@ -79,5 +79,5 @@ Here are some gotchas I have come across when using this system:
 Future plans
 ----
 * Consolidating the logic into a core library, at the moment SDAT and SDAT_ADF have duplicated logic
-* Create a third executable, probably called "reprocess", which will re-do the OCR stage on existing files. This is useful as when OCR technology improves, we can redo the OCR on our pre-scanned archives to improve them without needing the originals.
+* Create a third executable, probably called "reprocess", which will re-do the OCR and exif tagging stages on existing files. This is useful as when OCR technology improves, we can redo the OCR on our pre-scanned archives to improve them without needing the originals.
 
