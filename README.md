@@ -30,15 +30,15 @@ Common to both:
 * You may need to set TESS_DATADIR variable to something other than the default, as this varies by tesseract version (and distro package)
 * There are other options you can change by editing the script. A common one is $SCAN_DPI, the higher the DPI the more accurate the OCR (and the higher quality archive copy you keep), but it takes longer to scan and uses more space. The default is set to 600dpi, as this is the best archive quality vs space I found for my needs.
 
-SDAT:
------
+**SDAT:**
+
 * Run the script as follows:
 <code> ./SDAT.pl $target_folder $Name_of_output_file </code> (You don't have to put the extension, it is done automatically). A real world example I use is <code>./SDAT.pl /storage/backups/scanned_documents/2020/ energy_bill_page_1</code> as that way I can grep documents by year, which is good enough for me.
 
 On success the script will display the scanned file. You don't have to do anything to confirm, you can just close the display. The file is saved no matter what.
 
-SDAT_ADF:
------
+**SDAT_ADF:**
+
 
 * Run the script as follows:
 <code> ./SDAT_ADF.pl $target_folder $output_file_suffix </code> 
