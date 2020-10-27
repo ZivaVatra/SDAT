@@ -45,7 +45,8 @@ use strict;
 use POSIX "sys_wait_h";
 use File::Path "make_path";
 use File::Basename "fileparse";
-
+use rlib "./lib";
+use core qw(bgexe exe);
 
 my $FINALDST=shift or die("Usage: $0 \$target_folder \$target_scan_filename\n"); #destination, first argument given to script
 my $NAME=shift or die("Usage: $0 \$target_folder \$target_scan_filename\n"); #filename, second argument given to script
@@ -83,28 +84,6 @@ my $RANDSTR=`head -c 20 /dev/urandom  | md5sum | cut -d' ' -f 1`;
 $RANDSTR =~ s/\n//g;
 
 $NAME =~ s/\n//g;
-
-sub exe {
-    my $cmd = shift;
-	if ( -f "./env.sh") {
-		print "Using environment source\n";
-	    die("Could not execute $cmd, quitting\n") unless ( 0 == system("source ./env.sh && $cmd") );
-	} else {
-	    die("Could not execute $cmd, quitting\n") unless ( 0 == system($cmd) );
-	}
-}
-
-sub bgexe {
-    #As above, but execute in the background (fork and exec)
-    my $cmd = shift;
-    my $pid = fork();
-        if ($pid == 0) {
-            #we are the child
-            exec($cmd) or print STDERR "couldn't exec $cmd: $!\n";
-        } else {
-        return $pid;
-    }
-}
 
 sub scanit_adf {
 	my $mode = $_[0];
