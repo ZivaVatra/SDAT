@@ -7,6 +7,7 @@ The basic idea is of an automated system that scans the page, runs OCR on the te
 This allows indexing engines (e.g. Desktop search) to know what text the document contains, allowing for easier searching, while keeping the original text+format as an image scan. It saves a PNG file into the "./scans" output folder in CWD (configurable)
 
 Requirements:
+* perl rlib
 * tesseract (OCR)
 * sane-tools (SCANNING)
 * Exiv2 image metadata library (for adding text to comment field)

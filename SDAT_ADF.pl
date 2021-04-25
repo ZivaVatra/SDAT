@@ -45,6 +45,7 @@ use strict;
 use POSIX "sys_wait_h";
 use File::Path "make_path";
 use File::Basename "fileparse";
+
 use rlib "./lib";
 use core qw(bgexe exe);
 
@@ -55,7 +56,7 @@ my $NAME=shift or die("Usage: $0 \$target_folder \$target_scan_filename\n"); #fi
 # Global variables
 my $SCAN_DPI=600;
 # Extra options for scanimage, for specific scanners
-my $EXTRAOPTS=" --ald=no --df-action Stop --swdeskew=no --swcrop=no --buffermode On --prepick On ";
+my $EXTRAOPTS=" --ald=no --df-action Stop --swdeskew=no --swcrop=no";
 # These extra opts are for A4 paper size (defined as 210x297mm
 $EXTRAOPTS .= " --page-height 320 --page-width 211 -x 211 -y 300 ";
 #And these for A5 (defined as 148 x 210mm)
