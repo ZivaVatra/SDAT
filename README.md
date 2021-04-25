@@ -15,13 +15,15 @@ Requirements:
 
 Overview:
 ----
-There are two main perl programs, "SDAT.pl", and "SDAT_ADF.pl". They differ in the scanners they support. SDAT is for your normal flatbed scanner as most people have. The SDAT_ADF, as the name implies, is for "Auto document feeder" scanners, where you give the machine a stack of papers, and it scans the entire thing automatically.
 
-These programs are primarily written for my scanners, as those are the only ones I have access to, so I can confim SDAT\* works on the following:
-- SDAT: Epson V330 Perfection Photo scanner
-- SDAT_ADF: Fujitsu ScanSnap 500 (S500)
+There is the "SDAT.pl" program, which is your main entry point. Usage is as follows:
 
-For flatbed scanners, SDAT should work fine. However different ADF scanners have different settings, so the defaults in SDAF_ADF may not work. Best to try and make note of any differences. If there is demand I can see about adding a configuration file that allows you to modify parameters for specific scanners.
+`SDAT.pl $scanner_definition $config_file $output_folder $prefix`
+
+The $scanner_definition is what holds your device ID, as we all as any extra options you want to add to your scanner
+The $config_file is a configuration file for your job. 
+
+
 
 Usage:
 ----

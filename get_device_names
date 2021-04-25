@@ -1,0 +1,7 @@
+#!/usr/bin/perl
+print "Detected devices:\n";
+$_ = `scanimage -f '%d~'`;
+foreach(split /~/, $_) {
+	print"\t$_\n";
+}
+

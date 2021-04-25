@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # vim: ts=4 ai
 # SDAT - Scanned document archival tool
 #
@@ -40,14 +40,20 @@
 #	imageMagick tools (FORMAT CONVERSION)
 #
 
-use warnings;
 use strict;
+
 use POSIX "sys_wait_h";
 use File::Path "make_path";
 use File::Basename "fileparse";
 
 use rlib "./lib";
 use core qw(bgexe exe);
+
+# Global defaults
+our $SCAN_DPI=0;
+# Extra options for scanimage, for specific scanners
+our $EXTRAOPTS=-1;
+our $ARCHIVE_OUTPUT=-1;
 
 sub usage {
 	die("Usage: $0 \$configuration_file \$target_folder \$target_scan_filename\n");
@@ -57,11 +63,12 @@ my $FINALDST=shift or usage(); #destination
 my $NAME=shift or usage(); #filename
 
 # Read in config file
-open CONFIG, "$CONF_FILE" or die "Couldn't open the configuration file '$CONF_FILE'. Aborting execution.\n";
-my $config = join "", <CONFIG>;
-close CONFIG;
-eval $config;
+die("Not a valid config file (@!)\n") unless ( -f $CONF_FILE);
+require "$CONF_FILE";
 die "Couldn't interpret the configuration file ($CONF_FILE) that was given.\nError details follow: $@\n" if $@;
+
+# If DPI is still "0", we have invalid config, so cannot continue
+die("Invalid configuration file detected, cannot continue.\n") if $SCAN_DPI == 0;
 
 my $TPATH="/tmp/scanning/";
 if (! -d $TPATH) {
