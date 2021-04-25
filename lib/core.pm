@@ -8,21 +8,21 @@ our @EXPORT_OK = qw(get_device exe bgexe ocrit topng addComment);
 # OCR commands
 
 sub ocrit {
-    my $input_image = shift;
-    my $output_text = shift;
-    return bgexe("tesseract $input_image $output_text --tessdata-dir /usr/share/tesseract-ocr/  -l eng ");
+	my $input_image = shift;
+	my $output_text = shift;
+	return bgexe("tesseract $input_image $output_text --tessdata-dir /usr/share/tesseract-ocr/	-l eng ");
 }
 
 sub topng {
-    my $input = shift;
-    my $output = shift;
-    exe("convert -compress Zip $input $output");
+	my $input = shift;
+	my $output = shift;
+	exe("convert -compress Zip $input $output");
 }
 
 sub addComment {
-    my $input_text = shift;
-    my $output_image = shift;
-    exe("exiv2 -M\"set Exif.Photo.UserComment charset=Ascii \`cat $input_text\` \" $output_image");
+	my $input_text = shift;
+	my $output_image = shift;
+	exe("exiv2 -M\"set Exif.Photo.UserComment charset=Ascii \`cat $input_text\` \" $output_image");
 }
 
 
@@ -39,9 +39,9 @@ sub exe {
 	my $cmd = shift;
 	if ( -f "./env.sh") {
 		print "Using environment source\n";
-		die("Could not execute $cmd, quitting\n") unless ( 0 == system("source ./env.sh && $cmd") );
+		die("Could not execute $cmd, quitting\n") if system("source ./env.sh && $cmd");
 	} else {
-		die("Could not execute $cmd, quitting\n") unless ( 0 == system($cmd) );
+		die("Could not execute $cmd, quitting\n") if system($cmd);
 	}
 }
 

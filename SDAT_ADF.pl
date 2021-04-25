@@ -49,19 +49,19 @@ use File::Basename "fileparse";
 use rlib "./lib";
 use core qw(bgexe exe);
 
-my $FINALDST=shift or die("Usage: $0 \$target_folder \$target_scan_filename\n"); #destination, first argument given to script
-my $NAME=shift or die("Usage: $0 \$target_folder \$target_scan_filename\n"); #filename, second argument given to script
+sub usage {
+	die("Usage: $0 \$configuration_file \$target_folder \$target_scan_filename\n");
+}
+my $CONF_FILE=shift or usage(); # Configuration file
+my $FINALDST=shift or usage(); #destination
+my $NAME=shift or usage(); #filename
 
-
-# Global variables
-my $SCAN_DPI=600;
-# Extra options for scanimage, for specific scanners
-my $EXTRAOPTS=" --ald=no --df-action Stop --swdeskew=no --swcrop=no";
-# These extra opts are for A4 paper size (defined as 210x297mm
-$EXTRAOPTS .= " --page-height 320 --page-width 211 -x 211 -y 300 ";
-#And these for A5 (defined as 148 x 210mm)
-#$EXTRAOPTS .= " --page-height 211 --page-width 150 -x 150 -y 211 ";
-
+# Read in config file
+open CONFIG, "$CONF_FILE" or die "Couldn't open the configuration file '$CONF_FILE'. Aborting execution.\n";
+my $config = join "", <CONFIG>;
+close CONFIG;
+eval $config;
+die "Couldn't interpret the configuration file ($CONF_FILE) that was given.\nError details follow: $@\n" if $@;
 
 my $TPATH="/tmp/scanning/";
 if (! -d $TPATH) {
@@ -72,7 +72,6 @@ if (! -d $FINALDST) {
 	print("Creating output path\n");
 	make_path($FINALDST);
 }
-
 
 
 my $DEVICE=`scanimage -f %d`;
