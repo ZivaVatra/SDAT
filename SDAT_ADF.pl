@@ -46,29 +46,36 @@ use POSIX "sys_wait_h";
 use File::Path "make_path";
 use File::Basename "fileparse";
 
-use rlib "./lib";
-use core qw(bgexe exe);
-
 # Global defaults
 our $SCAN_DPI=0;
 # Extra options for scanimage, for specific scanners
-our $EXTRAOPTS=-1;
-our $ARCHIVE_OUTPUT=-1;
+our $DEVICE;
+our $EXTRAOPTS;
+our $ARCHIVE_OUTPUT;
+
+require "./lib/core.pm";
 
 sub usage {
 	die("Usage: $0 \$configuration_file \$target_folder \$target_scan_filename\n");
 }
-my $CONF_FILE=shift or usage(); # Configuration file
+my $CONF_FILE=shift or usage(); # Configuration 
+my $SPROFILE=shift or usage(); # Scanner profile
 my $FINALDST=shift or usage(); #destination
 my $NAME=shift or usage(); #filename
 
 # Read in config file
-die("Not a valid config file (@!)\n") unless ( -f $CONF_FILE);
-require "$CONF_FILE";
+die("Not a valid config file ($!)\n") unless ( -f $CONF_FILE);
+require $CONF_FILE;
 die "Couldn't interpret the configuration file ($CONF_FILE) that was given.\nError details follow: $@\n" if $@;
+
+die("Not a valid scanner profile ($!)\n") unless (-f $SPROFILE);
+require $SPROFILE;
+die "Couldn't interpret the scanner profile file ($SPROFILE) that was given.\nError details follow: $@\n" if $@;
 
 # If DPI is still "0", we have invalid config, so cannot continue
 die("Invalid configuration file detected, cannot continue.\n") if $SCAN_DPI == 0;
+die("Invalid sprofile detected, cannot continue.\n") unless defined($DEVICE);
+
 
 my $TPATH="/tmp/scanning/";
 if (! -d $TPATH) {
@@ -81,46 +88,12 @@ if (! -d $FINALDST) {
 }
 
 
-my $DEVICE=`scanimage -f %d`;
-$DEVICE =~ s/\`//;
-$DEVICE =~ s/\'//;
-$DEVICE =~ s/\n//;
-print "Using Device: $DEVICE\n";
 
 my $RANDSTR=`head -c 20 /dev/urandom  | md5sum | cut -d' ' -f 1`;
 $RANDSTR =~ s/\n//g;
 
 $NAME =~ s/\n//g;
 
-sub scanit_adf {
-	my $mode = $_[0];
-	my $resolution = $_[1];
-	my $o_folder = $_[2];
-	my $o_pattern = $_[3];
-
-	die("Could not scan!\n") unless (0 == system(
-		"scanimage -v -p --format=tiff $EXTRAOPTS --mode $mode -d \"$DEVICE\" --resolution $resolution --source \"ADF Duplex\" --batch=$o_folder/$o_pattern\_%02d.tiff"
-	));
-	return 0;
-}
-
-sub ocrit {
-	my $input_image = shift;
-	my $output_text = shift;
-    return bgexe("tesseract $input_image $output_text --tessdata-dir /usr/share/tesseract-ocr/  -l eng ");
-}
-
-sub topng {
-	my $input = shift;
-	my $output = shift;
-    exe("convert -compress Zip $input $output");
-}
-
-sub addComment {
-	my $input_text = shift;
-	my $output_image = shift;
-	exe("exiv2 -M\"set Exif.Photo.UserComment charset=Ascii \`cat $input_text\` \" $output_image");
-}
 
 sub waituntildone {
 	my $pid = shift;
@@ -165,7 +138,7 @@ unless (-e "$TPATH/scan.$RANDSTR/") { make_path("$TPATH/scan.$RANDSTR/"); }
 # As this can take a while, we fork
 my $pid = fork();
 if ($pid == 0) {
-	exit(scanit_adf("color",$SCAN_DPI,"$TPATH/scan.$RANDSTR/", $RANDSTR));
+	exit(scanit_adf("color",$SCAN_DPI,"$TPATH/scan.$RANDSTR/", $RANDSTR, $EXTRAOPTS, $DEVICE));
 }
 
 #While the above is scanning, we sit and wait for files to be created,

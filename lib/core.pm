@@ -1,9 +1,24 @@
-package ::core;
+#package ::core;
 use strict;
 use warnings;
 
-use Exporter qw(import);
-our @EXPORT_OK = qw(get_device exe bgexe ocrit topng addComment);
+#use Exporter qw(import);
+#our @EXPORT_OK = qw(get_device exe bgexe ocrit topng addComment scanit_adf);
+
+# OCR commands for ADF
+sub scanit_adf {
+    my $mode = $_[0];
+    my $resolution = $_[1];
+    my $o_folder = $_[2];
+    my $o_pattern = $_[3];
+	my $extraopts = $_[4];
+	my $device = $_[5];
+
+    die("Could not scan!\n") unless (0 == system(
+        "scanimage -v -p --format=tiff $extraopts --mode $mode -d \"$device\" --resolution $resolution --source \"ADF Duplex\" --batch=$o_folder/$o_pattern\_%02d.tiff"
+    ));
+    return 0;
+}
 
 # OCR commands
 
@@ -57,5 +72,5 @@ sub bgexe {
 	}
 }
 
-
+1;
 
