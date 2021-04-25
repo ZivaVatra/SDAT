@@ -7,16 +7,15 @@ use warnings;
 
 # OCR commands for ADF
 sub scanit_adf {
-    my $mode = $_[0];
-    my $resolution = $_[1];
-    my $o_folder = $_[2];
-    my $o_pattern = $_[3];
-	my $extraopts = $_[4];
-	my $device = $_[5];
+    my $resolution = shift;
+    my $o_folder = shift;
+    my $o_pattern = shift;
+	my $extraopts = shift;
+	my $device = shift;
 
-    die("Could not scan!\n") unless (0 == system(
-        "scanimage -v -p --format=tiff $extraopts --mode $mode -d \"$device\" --resolution $resolution --source \"ADF Duplex\" --batch=$o_folder/$o_pattern\_%02d.tiff"
-    ));
+    die("Could not scan!\n") if system(
+        "scanimage -v -p --format=tiff $extraopts -d \"$device\" --resolution $resolution --source \"ADF Duplex\" --batch=$o_folder/$o_pattern\_%02d.tiff"
+    );
     return 0;
 }
 

@@ -50,18 +50,16 @@ use File::Basename "fileparse";
 our $SCAN_DPI=0;
 # Extra options for scanimage, for specific scanners
 our $DEVICE;
-our $EXTRAOPTS;
-our $ARCHIVE_OUTPUT;
-
+our $EXTRAOPTS="";
 require "./lib/core.pm";
 
 sub usage {
 	die("Usage: $0 \$configuration_file \$target_folder \$target_scan_filename\n");
 }
-my $CONF_FILE=shift or usage(); # Configuration 
+my $CONF_FILE=shift or usage(); # Configuration
 my $SPROFILE=shift or usage(); # Scanner profile
-my $FINALDST=shift or usage(); #destination
-my $NAME=shift or usage(); #filename
+our $FINALDST=shift or usage(); #destination (global for callback)
+our $NAME=shift or usage(); #filename (global for callback)
 
 # Read in config file
 die("Not a valid config file ($!)\n") unless ( -f $CONF_FILE);
@@ -138,7 +136,7 @@ unless (-e "$TPATH/scan.$RANDSTR/") { make_path("$TPATH/scan.$RANDSTR/"); }
 # As this can take a while, we fork
 my $pid = fork();
 if ($pid == 0) {
-	exit(scanit_adf("color",$SCAN_DPI,"$TPATH/scan.$RANDSTR/", $RANDSTR, $EXTRAOPTS, $DEVICE));
+	exit(scanit_adf($SCAN_DPI,"$TPATH/scan.$RANDSTR/", $RANDSTR, $EXTRAOPTS, $DEVICE));
 }
 
 #While the above is scanning, we sit and wait for files to be created,
@@ -182,6 +180,11 @@ while(1) {
 		# and dead scanning PID, quit loop
 		last;
 	}
-}	
+}
+# Finally, we check to see if callback_last function is defined. If it is, we execute
+if (defined(&callback_last)) {
+	callback_last();
+}
+
 # When all is done, remove tmp folder
 exe("rm -rv $TPATH/scan.$RANDSTR/");
