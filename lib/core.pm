@@ -1,11 +1,11 @@
-#package ::core;
 use strict;
 use warnings;
 
-#use Exporter qw(import);
-#our @EXPORT_OK = qw(get_device exe bgexe ocrit topng addComment scanit_adf);
+sub waituntildone {
+    my $pid = shift;
+    return waitpid($pid,0) ;
+}
 
-# OCR commands for ADF
 sub scanit_adf {
 	my $resolution = shift;
 	my $o_folder = shift;
@@ -31,7 +31,7 @@ sub scanit {
 	# Sometimes scanimage hangs, so we have to fork again, and monitor with timeout (60 seconds)
 	my $pid = fork();
 	if ($pid == 0) {
-	   exec("scanimage -v -p --format=tiff $extraopts -d \"$device\" --resolution $resolution > $o_folder/$o_pattern") or die ("could not scan!\n");
+	   exec("scanimage -v -p --format=tiff $extraopts -d \"$device\" --resolution $resolution > $o_folder/$o_pattern.temptiff") or die ("could not scan!\n");
 	}
 
 	my $time = time();
@@ -39,6 +39,8 @@ sub scanit {
 	sleep 1;
 	while ((time() - $time) < 60 ) {
 		if ( waitpid($pid,1) == -1 ) {
+			# If we reach this point, it means we completed the scan, we rename the file ext to "tiff" to make the processing code aware its ready.
+			rename("$o_folder/$o_pattern.temptiff", "$o_folder/$o_pattern.tiff");
 			return(0);
 		}
 		sleep 1;
@@ -48,6 +50,8 @@ sub scanit {
 	kill("TERM",$pid);
 	sleep 1;
 	kill("KILL",$pid); #Scanimage will abort if it gets two SIGTERM's
+
+	rename("$o_folder/$o_pattern.temptiff", "$o_folder/$o_pattern.tiff");
 	return(0);
 }
 
@@ -56,7 +60,11 @@ sub scanit {
 sub ocrit {
 	my $input_image = shift;
 	my $output_text = shift;
-	return bgexe("tesseract $input_image $output_text --tessdata-dir /usr/share/tesseract-ocr/ -l eng ");
+	my $tessopts = shift;
+	# Tesseract adds .txt itself, so we remove it if in output text
+	$output_text =~ s/\.txt^//g;
+	exe("tesseract $input_image $output_text $tessopts");
+	return 1; # Return true
 }
 
 sub topng {
@@ -66,9 +74,32 @@ sub topng {
 }
 
 sub addComment {
-	my $input_text = shift;
+	my $input_file = shift;
 	my $output_image = shift;
-	exe("exiv2 -M\"set Exif.Photo.UserComment charset=Ascii \`cat $input_text\` \" $output_image");
+	my $intext = "NODATA";
+
+	unless (-f $input_file) {
+		$intext = "SDAT: No OCR file $input_file\n";
+		warn($input_file);
+	}
+
+	if (-z $input_file) {
+		$intext = "SDAT: No OCR text in file $input_file\n";
+		warn($input_file);
+	}
+
+	if ( -f $input_file ){
+		print($input_file);
+		open(TEXT, "<$input_file") or die($!);
+		$intext = "";
+		while(<TEXT>) {
+			$intext .= $_;
+		}
+		close(TEXT);
+		$intext =~ s/"/\\"/g;
+	}
+
+	warn("Could not write EXIF tag\n") if system("exiv2", "-M", "set Exif.Photo.UserComment charset=Ascii \"$intext\"", $output_image);
 }
 
 

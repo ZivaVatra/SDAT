@@ -52,6 +52,9 @@ our $SCAN_DPI=0;
 our $DEVICE;
 our $EXTRAOPTS="";
 our $HAS_ADF;
+# Extra options for tesseract
+our $TESSOPTS=" --tessdata-dir /usr/share/tesseract-ocr/4.00/tessdata/ -l eng ";
+
 require "./lib/core.pm";
 
 sub usage {
@@ -106,7 +109,7 @@ sub process_file {
 	my ($filename, $dirs, $suffix) = fileparse($_infile, qr/\.[^.]*/);
 
 	# ocr the image, save to text file
-	waituntildone(ocrit("$_infile","$dirs/$filename"));
+	waituntildone(ocrit("$_infile","$dirs/$filename", $TESSOPTS));
 
 	# Convert to png
 	my $pngfile = $filename;
@@ -123,8 +126,6 @@ sub process_file {
 	# Once all done, remove the infile
 	unlink($_infile);
 
-	# TODO, make this an option
-	#return system("display -sample 750 $FINALDST/$pngfile");
 	return 0;
 }
 	
@@ -191,4 +192,4 @@ if (defined(&callback_last)) {
 }
 
 # When all is done, remove tmp folder
-exe("rm -rv $TPATH/scan.$RANDSTR/");
+exe("rm -rv $TPATH/scan.$RANDSTR");
