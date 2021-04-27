@@ -7,16 +7,48 @@ use warnings;
 
 # OCR commands for ADF
 sub scanit_adf {
-    my $resolution = shift;
-    my $o_folder = shift;
-    my $o_pattern = shift;
+	my $resolution = shift;
+	my $o_folder = shift;
+	my $o_pattern = shift;
 	my $extraopts = shift;
 	my $device = shift;
 
-    die("Could not scan!\n") if system(
-        "scanimage -v -p --format=tiff $extraopts -d \"$device\" --resolution $resolution --source \"ADF Duplex\" --batch=$o_folder/$o_pattern\_%02d.tiff"
-    );
-    return 0;
+	die("Could not scan!\n") if system(
+		"scanimage -v -p --format=tiff $extraopts -d \"$device\" --resolution $resolution --source \"ADF Duplex\" --batch=$o_folder/$o_pattern\_%02d.tiff"
+	);
+	return 0;
+}
+
+sub scanit {
+	my $resolution = shift;
+	my $o_folder = shift;
+	my $o_pattern = shift;
+	my $extraopts = shift;
+	my $device = shift;
+
+	mkdir($o_folder) unless (-d $o_folder) or die("Could not create output dir $o_folder\n"); # Create the output folder if it doesn't exist
+
+	# Sometimes scanimage hangs, so we have to fork again, and monitor with timeout (60 seconds?)
+	my $pid = fork();
+	if ($pid == 0) {
+	   exec("scanimage	-v -p --format=tiff $extraopts -d \"$device\" --resolution $resolution > $o_folder/$output") or die ("could not scan!\n");
+	}
+
+	my $time = time();
+	print "Waiting for scanning to finish\n";
+	sleep 1;
+	while ((time() - $time) < $WAIT_TIMEOUT ) {
+		if ( waitpid($pid,1) == -1 ) {
+			return(0);
+		}
+		sleep 1;
+	}
+
+	print "Error! Timeout exceeded! Killing and continuing...\n";
+	kill("TERM",$pid);
+	sleep 1;
+	kill("KILL",$pid); #Scanimage will abort if it gets two SIGTERM's
+	return(0);
 }
 
 # OCR commands
@@ -24,7 +56,7 @@ sub scanit_adf {
 sub ocrit {
 	my $input_image = shift;
 	my $output_text = shift;
-	return bgexe("tesseract $input_image $output_text --tessdata-dir /usr/share/tesseract-ocr/	-l eng ");
+	return bgexe("tesseract $input_image $output_text --tessdata-dir /usr/share/tesseract-ocr/ -l eng ");
 }
 
 sub topng {

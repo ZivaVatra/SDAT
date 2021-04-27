@@ -1,8 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # vim: ts=4 ai
 # SDAT - Scanned document archival tool
 #
-#Copyright 2015 Ziva-Vatra, Belgrade
+#Copyright 2020 Ziva-Vatra, Belgrade
 #(www.ziva-vatra.com, mail: info@ziva_vatra.com)
 #
 # Project URL: http://www.ziva-vatra.com/index.php?aid=71&id=U29mdHdhcmU=
@@ -40,19 +40,41 @@
 #	imageMagick tools (FORMAT CONVERSION)
 #
 
-use warnings;
 use strict;
+
 use POSIX "sys_wait_h";
 use File::Path "make_path";
+use File::Basename "fileparse";
 
+# Global defaults
+our $SCAN_DPI=0;
+# Extra options for scanimage, for specific scanners
+our $DEVICE;
+our $EXTRAOPTS="";
+our $HAS_ADF;
+require "./lib/core.pm";
 
-my $FINALDST=shift or die("Usage: $0 \$target_folder \$target_scan_filename\n"); #destination, first argument given to script
-my $NAME=shift or die("Usage: $0 \$target_folder \$target_scan_filename\n"); #filename, second argument given to script
+sub usage {
+	die("Usage: $0 \$configuration_file \$target_folder \$target_scan_filename\n");
+}
+my $CONF_FILE=shift or usage(); # Configuration
+my $SPROFILE=shift or usage(); # Scanner profile
+our $FINALDST=shift or usage(); #destination (global for callback)
+our $NAME=shift or usage(); #filename (global for callback)
 
+# Read in config file
+die("Not a valid config file ($!)\n") unless ( -f $CONF_FILE);
+require $CONF_FILE;
+die "Couldn't interpret the configuration file ($CONF_FILE) that was given.\nError details follow: $@\n" if $@;
 
-# Global variables
-my $SCAN_DPI=600;
-my $WAIT_TIMEOUT=180;  # In seconds
+die("Not a valid scanner profile ($!)\n") unless (-f $SPROFILE);
+require $SPROFILE;
+die "Couldn't interpret the scanner profile file ($SPROFILE) that was given.\nError details follow: $@\n" if $@;
+
+# If DPI is still "0", we have invalid config, so cannot continue
+die("Invalid configuration file detected, cannot continue.\n") if $SCAN_DPI == 0;
+die("Invalid sprofile detected, cannot continue.\n") unless defined($DEVICE);
+
 
 my $TPATH="/tmp/scanning/";
 if (! -d $TPATH) {
@@ -66,167 +88,108 @@ if (! -d $FINALDST) {
 
 
 
-my $DEVICE=`scanimage -L | awk '{ print \$2 }'`;
-$DEVICE =~ s/\`//;
-$DEVICE =~ s/\'//;
-$DEVICE =~ s/\n//;
-print "Using Device: $DEVICE\n";
-
 my $RANDSTR=`head -c 20 /dev/urandom  | md5sum | cut -d' ' -f 1`;
 $RANDSTR =~ s/\n//g;
 
 $NAME =~ s/\n//g;
 
-sub exe {
-    my $cmd = shift;
-	if ( -f "./env.sh") {
-		print "Using environment source\n";
-	    die("Could not execute $cmd, quitting\n") unless ( 0 == system("source ./env.sh && $cmd") );
-	} else {
-	    die("Could not execute $cmd, quitting\n") unless ( 0 == system($cmd) );
-	}
-}
-
-sub bgexe {
-    #As above, but execute in the background (fork and exec)
-    my $cmd = shift;
-    my $pid = fork();
-        if ($pid == 0) {
-            #we are the child
-            exec($cmd) or print STDERR "couldn't exec $cmd: $!\n";
-        } else {
-        return $pid;
-    }
-}
-
-sub reset_scanner {
-	my $rc =  system("./reset-epsonv330");
-	if ( $rc != 0 ) {
-		print "WARNING: Could not run ./reset-epsonv330 to reset the USB bus. Attempting to continue, but next scan may hang...";
-		return 0;
-	}
-	$DEVICE=`scanimage -L | awk '{ print \$2 }'`;
-	$DEVICE =~ s/\`//;
-	$DEVICE =~ s/\'//;
-	$DEVICE =~ s/\n//;
-}
-
-sub scanit {
-	my $mode = $_[0];
-	my $resolution = $_[1];
-	my $output = $_[2];
-
-    #exe("scanimage  -v -p --format=tiff --mode $mode -d $DEVICE --resolution $resolution > $output");
-	
-	# Sometimes scanimage hangs, so we have to fork again, and monitor with timeout (60 seconds?)
-	
-    my $pid = fork();
-	if ($pid == 0) {
-#		print "scanimage  -v -p --format=tiff --mode $mode -d $DEVICE --resolution $resolution > $output";
-	   exec("scanimage  -v -p --format=tiff --mode $mode -d $DEVICE --resolution $resolution > $output") or die ("could not scan!\n");
-	}
-	   
-	my $time = time();
-	print "Waiting for scanning to finish\n";
-	sleep 1;
-	while ((time() - $time) < $WAIT_TIMEOUT ) {
-		if ( waitpid($pid,1) == -1 ) {
-			return(0);
-		}
-		sleep 1;
-	}
-
-	print "Error! Timeout exceeded! Killing and continuing...\n";
-	kill("TERM",$pid);
-	sleep 1;
-	kill("KILL",$pid); #Scanimage will abort if it gets two SIGTERM's
-	reset_scanner();
-	return(0);
-}
-
-sub ocrit {
-	my $input_image = shift;
-	my $output_text = shift;
-    return bgexe("tesseract $input_image $output_text --tessdata-dir /usr/share/tesseract-ocr/  -l eng ");
-}
-
-sub topng {
-	my $input = shift;
-	my $output = shift;
-    exe("convert -compress Zip $input $output");
-}
-
-sub addComment {
-	my $input_text = shift;
-	my $output_image = shift;
-#	my $comment = "";
-#	open(FILE,$input_text);
-#	open(OUTFILE,">$input_texit\_munged");
-#	while (<FILE>) {
-#		s/\n/ -- /g; 
-#		print OUTFILE $_;
-#		$comment .= $_;
-#	}
-#	close(FILE);
-#	close(OUTFILE);
-
-#	exe("exiv2 -M\"set Exif.Photo.UserComment charset=Ascii '\`cat $input_text\_munged\`' \" $output_image");
-	exe("exiv2 -M\"set Exif.Photo.UserComment charset=Ascii \`cat $input_text\` \" $output_image");
-}
 
 sub waituntildone {
 	my $pid = shift;
 	return waitpid($pid,0) ;
 }
 
-#print("Hit enter to scan (filename: $NAME ), CTRL-C to cancel");
-#$_ = <STDIN>;
+
+sub process_file {
+	my $_infile = shift;
+	# Parse out the file
+	my ($filename, $dirs, $suffix) = fileparse($_infile, qr/\.[^.]*/);
+
+	# ocr the image, save to text file
+	waituntildone(ocrit("$_infile","$dirs/$filename"));
+
+	# Convert to png
+	my $pngfile = $filename;
+	$pngfile =~ s/$RANDSTR/$NAME/g;
+	$pngfile .= ".png";
+	
+	print("Filename: $filename, dirs: $dirs, suffix: $suffix pngfile: $pngfile\n");
+
+	topng("$_infile","$dirs/$pngfile");
+
+	addComment("$dirs/$filename.txt","$dirs/$pngfile");
+
+	exe("mv -v $dirs/$pngfile $FINALDST/");
+	# Once all done, remove the infile
+	unlink($_infile);
+
+	# TODO, make this an option
+	#return system("display -sample 750 $FINALDST/$pngfile");
+	return 0;
+}
+	
+
 
 #Create the tmpdir if it doesn't exist
-unless (-e $TPATH) { mkdir($TPATH); }
+unless (-e "$TPATH/scan.$RANDSTR/") { make_path("$TPATH/scan.$RANDSTR/"); }
 
-#1. Scan the image (gray for OCR). This is always done at 1200dpi
-scanit("color",$SCAN_DPI,"$TPATH/scan_ocr.$RANDSTR.tif");
-
-#2. Scan the colour image we will store
-my $scanpid = fork();
-if ($scanpid == 0) {
-	# scanit("color",$SCAN_DPI,"$TPATH/scan_col.$RANDSTR.tif");
-	# So we removed the duel scanning, and just copying the original. It
-	# is good enough for OCR, and makes the whole thing faster
-	system("cp $TPATH/scan_ocr.$RANDSTR.tif $TPATH/scan_col.$RANDSTR.tif");
-	exit();
-}
-
-#3 ocr the image
-ocrit("$TPATH/scan_ocr.$RANDSTR.tif","$TPATH/scan_txt.$RANDSTR");
-
-#4 wait for the color scan to finish
-waituntildone($scanpid);
-
-
-# Right, the below needs no user input, so we can just fork and exit the program.
-# this way we can go to the next scan while this does work in the background
-
-#my $pid = fork();
-#if ($pid == 0) {
-	#ok, all done! Now convert to png and add text
-	topng("$TPATH/scan_col.$RANDSTR.tif","$TPATH/$NAME.png");
-
-	addComment("$TPATH/scan_txt.$RANDSTR.txt","$TPATH/$NAME.png");
-
-	exe("mv -v  $TPATH/$NAME.png $FINALDST/");
-	exe("rm -v $TPATH/*$RANDSTR*");
-#} else {
-#
-# Display the finished article
+# 1. Scan the images to a temporary folder
+# As this can take a while, we fork
 my $pid = fork();
 if ($pid == 0) {
-	system("display -sample 750 $FINALDST/$NAME.png");
-	exit(0);
-} else {
-exit 0;
+	if($HAS_ADF) {
+		exit(scanit_adf($SCAN_DPI,"$TPATH/scan.$RANDSTR/", $RANDSTR, $EXTRAOPTS, $DEVICE));
+	} else {
+		exit(scanit($SCAN_DPI,"$TPATH/scan.$RANDSTR/", $RANDSTR, $EXTRAOPTS, $DEVICE));
+	}
 }
-#}
 
+#While the above is scanning, we sit and wait for files to be created,
+# Then process them as they arrive
+my $counter = 3;
+while(1) {
+	sleep(5); # 5 second wait
 
+	#2. Loop through images, for each one do the OCR, and move to dest
+	my @outfiles = `find $TPATH/scan.$RANDSTR/*.tiff 2>/dev/null`;
+	my @pids;
+		
+	# As long as the scanning pid is not dead, reset
+	# counter
+	if (waitpid($pid, WNOHANG) != -1) {
+		$counter = 3;
+	}
+
+	foreach(@outfiles) {
+		# Every time we have a file, we reset the counter
+		s/\n//g;
+		print("Processing image $_\n");
+	
+		my $pid = fork();
+		if ($pid == 0) {
+			exit(process_file($_));
+		} else {
+			push(@pids, $pid);
+		}
+			
+	}
+	
+	print("Waiting for processing pid:");
+	foreach(@pids) {
+		print(" $_");
+		waituntildone($_);
+	}
+	if ($counter-- <= 0) {
+		print(" Finished!\n");
+		# We have reached end of coutdown with no files
+		# and dead scanning PID, quit loop
+		last;
+	}
+}
+# Finally, we check to see if callback_last function is defined. If it is, we execute
+if (defined(&callback_last)) {
+	callback_last();
+}
+
+# When all is done, remove tmp folder
+exe("rm -rv $TPATH/scan.$RANDSTR/");
