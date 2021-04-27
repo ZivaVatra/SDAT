@@ -164,3 +164,16 @@ Here are some gotchas I have come across when using this system:
 Future plans
 ----
 * Create a third executable, probably called "reprocess", which will re-do the OCR and exif tagging stages on existing files. This is useful as when OCR technology improves, we can redo the OCR on our pre-scanned archives to improve them without needing the originals.
+
+
+Development
+----
+
+If you want to help develop SDAT, even if it just to define more configs, please follow these procedures:
+
+1. Branch off the "version2" branch in git
+2. make your changes in your own branch, test etc..
+3. When ready, then issue a merge request to version2 branch, which I can review and merge if all is well.
+4. Once tested and ready for release, I will merge to master, which should always be a stable working and bug free branch.
+
+
