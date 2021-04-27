@@ -118,7 +118,6 @@ $EXTRAOPTS .= " --page-height 320 --page-width 211 -x 211 -y 300 --mode color";
 #	$FINALDST (final destiation, this is where your scanned documents end up)
 #	$NAME (the prefix defined as your argument)
 sub callback_last {
-	# 1. get list of all files in dir
 	my @files = glob("$FINALDST/*.png");
 	my $arglist = "";
 	print "Converting png to compressed JPEG\n";
