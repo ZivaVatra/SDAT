@@ -28,16 +28,16 @@ sub scanit {
 
 	mkdir($o_folder) unless (-d $o_folder) or die("Could not create output dir $o_folder\n"); # Create the output folder if it doesn't exist
 
-	# Sometimes scanimage hangs, so we have to fork again, and monitor with timeout (60 seconds?)
+	# Sometimes scanimage hangs, so we have to fork again, and monitor with timeout (60 seconds)
 	my $pid = fork();
 	if ($pid == 0) {
-	   exec("scanimage	-v -p --format=tiff $extraopts -d \"$device\" --resolution $resolution > $o_folder/$output") or die ("could not scan!\n");
+	   exec("scanimage -v -p --format=tiff $extraopts -d \"$device\" --resolution $resolution > $o_folder/$o_pattern") or die ("could not scan!\n");
 	}
 
 	my $time = time();
 	print "Waiting for scanning to finish\n";
 	sleep 1;
-	while ((time() - $time) < $WAIT_TIMEOUT ) {
+	while ((time() - $time) < 60 ) {
 		if ( waitpid($pid,1) == -1 ) {
 			return(0);
 		}

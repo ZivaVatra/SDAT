@@ -62,6 +62,7 @@ The configuration looks like this:
 $EXTRAOPTS .= " --ald=no --df-action Stop --swdeskew=no --swcrop=no";
 $DEVICE="fujitsu:ScanSnap S500:14658";
 $HAS_ADF=1;
+1; # This is always needed at the end
 ```
 
 $EXTRAOPTS are options understood by the `scanimage` command, and any options can be passed. In this case we disabled SW deskew and cropping in the driver, and made the default action in case of error for the scanner to stop. "ald" is page "leading edge" detection, which I felt was not needed as we want a full scan, even if we overscan a bit, rather than risk cutting off bits of the document.
@@ -132,6 +133,7 @@ sub callback_last {
 	die("Could not merge to pdf $NAME.pdf\n") if system("convert $arglist $FINALDST/$NAME.pdf");
 	system("rm $arglist"); # Try to delete the jpeg files
 }
+1; # This is always needed at the end
 ```
 
 As you can see, this config is a bit more complex, and it makes use of a powerful new feature of SDAT. The "callback_last" function. You have the ability to execute a custom function at the end of the scan, to do whatever you want to the resultant scanned documents. In this case, I had a small resolution (100DPI), then converted the files to JPEG (As they are smaller for colour scans), then merged them to a pdf file.

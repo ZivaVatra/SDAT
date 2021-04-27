@@ -173,8 +173,7 @@ while(1) {
 		}
 			
 	}
-	
-	print("Waiting for processing pid:");
+	print("Waiting for processing pid\n");
 	foreach(@pids) {
 		print(" $_");
 		waituntildone($_);
