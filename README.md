@@ -1,6 +1,12 @@
 SDAT - Scanned document archival tool
 ====
 
+News:
+----
+
+- April 2021: New version 2 released, this has some new features, including configurable jobs and scanner definitions. Look at documentation below for more info. The old version (now renamed version1) will live in the version1 branch, if anyone needs it.
+
+
 Overview:
 ----
 
@@ -34,13 +40,13 @@ The $config_file is a configuration file for your job. For more information for 
 
 "$output_folder" is the target where your files will be saved, while "$prefix" is the name of the file. If you only scan one file without ADF, this will just end up being "$prefix.png". If you are using an ADF scanner with multiple scanned pages, then each scan will be separate file, with the format $prefix\_$02d. For example, running:
 
-<code> ./SDAT_ADF.pl ./scanners/fujitsu_snapscan.scanner ./configs/archive.conf /storage/backups/scanned_documents/2020/ energy_bill  </code> Will use my Fujistu ADF scanner to scan all the pages in the tray, following the "archive" configuration, which is a high quality archival PNG store, with OCR metadata. When done, the output should look like this:
-
-*  /storage/backups/scanned_documents/2020/energy_bill_01
-*  /storage/backups/scanned_documents/2020/energy_bill_02
-*  /storage/backups/scanned_documents/2020/energy_bill_03
-*  /storage/backups/scanned_documents/2020/energy_bill_04
-
+`./SDAT_ADF.pl ./scanners/fujitsu_snapscan.scanner ./configs/archive.conf /storage/backups/scanned_documents/2020/ energy_bill` Will use my Fujistu ADF scanner to scan all the pages in the tray, following the "archive" configuration, which is a high quality archival PNG store, with OCR metadata. When done, the output should look like this:
+```
+  /storage/backups/scanned_documents/2020/energy_bill_01
+  /storage/backups/scanned_documents/2020/energy_bill_02
+  /storage/backups/scanned_documents/2020/energy_bill_03
+  /storage/backups/scanned_documents/2020/energy_bill_04
+```
 In this case, it is a two page document, double sided, so we end up with 4 numbered pages in total.
 
 When ADF is supported, SDAT will scan each page until the tray is empty. While doing this, in the background it will start the process of OCR and conversion. Once the scanning is done, the executable will wait until all processing child process are done.
@@ -52,22 +58,22 @@ Configuration
 
 Each scanner is different, so to support multiple scanners, including a computer with multiple scanners attached, the concept of "scanner definion" files have been added in this version. This allows you to pass specific scanner configuration to SDAT, along with the scanner ID. I have included the definition files for my two scanners, but feel free to submit your own.
 The configuration looks like this:
-<code>
+```
 $EXTRAOPTS .= " --ald=no --df-action Stop --swdeskew=no --swcrop=no";
 $DEVICE="fujitsu:ScanSnap S500:14658";
 $HAS_ADF=1;
-</code>
+```
 
 $EXTRAOPTS are options understood by the `scanimage` command, and any options can be passed. In this case we disabled SW deskew and cropping in the driver, and made the default action in case of error for the scanner to stop. "ald" is page "leading edge" detection, which I felt was not needed as we want a full scan, even if we overscan a bit, rather than risk cutting off bits of the document.
 
 the $DEVICE variable is the ID used by SANE to know which scanner to use. You can find out what your scanner(s) are by running `get_device_names`, like so:
 
-<code>
+```
 ~ $./get_device_names
 Detected devices:
 	epkowa:interpreter:001:012
 
-</code>
+```
 
 In this case only my Epson is powered on, the "epkowa" line would be placed in $DEVICE. 
 
@@ -79,14 +85,14 @@ The job configuration file allows you to define certain scan jobs, if you have m
 
 Both configs are provided in the "configs" directory, but here is how they look like:
 
-<code>
+```
 $SCAN_DPI=600;
 # Extra options for scanimage, for specific scanners
 # These extra opts are for A4 paper size (defined as 210x297mm, and colour mode
 $EXTRAOPTS .= " --page-height 320 --page-width 211 -x 211 -y 300 --mode color";
 #And these for A5 (defined as 148 x 210mm)
 #$EXTRAOPTS .= " --page-height 211 --page-width 150 -x 150 -y 211 ";
-</code>
+```
 
 I set 600 DPI as the scan size, as I find this is a good size to provide decent OCR accuracy, and it is also big enough to clearly see even small legal text. It can also be printed and still look similar to the original in print quality if needed.
 
@@ -95,7 +101,7 @@ The $EXTRAOPTS in this case specify the paper size, and whether we want colour s
 
 The next config is called "adf_email_pdf.conf", and it does what it says on the tin. I wrote this becauses I needed the ability to scan a bunch of documents, and generate a PDF small enough to be able to send via email. This is the opposite of the "Archive" config in that sense, as the documents were not being shredded I did not need very high quality archival copies.
 
-<code>
+```
 $SCAN_DPI=100;
 # Extra options for scanimage, for specific scanners
 $EXTRAOPTS .= " --page-height 320 --page-width 211 -x 211 -y 300 --mode color";
@@ -127,7 +133,7 @@ sub callback_last {
 	die("Could not merge to pdf $NAME.pdf\n") if system("convert $arglist $FINALDST/$NAME.pdf");
 	system("rm $arglist"); # Try to delete the jpeg files
 }
-</code>
+```
 
 As you can see, this config is a bit more complex, and it makes use of a powerful new feature of SDAT. The "callback_last" function. You have the ability to execute a custom function at the end of the scan, to do whatever you want to the resultant scanned documents. In this case, I had a small resolution (100DPI), then converted the files to JPEG (As they are smaller for colour scans), then merged them to a pdf file.
 
