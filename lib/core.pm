@@ -89,7 +89,6 @@ sub addComment {
 	}
 
 	if ( -f $input_file ){
-		print($input_file);
 		open(TEXT, "<$input_file") or die($!);
 		$intext = "";
 		while(<TEXT>) {
