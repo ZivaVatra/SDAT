@@ -57,4 +57,5 @@ die("Can't find file\n") unless (-f $target);
 
 ocrit($target, "/tmp/ocr_text", $TESSOPTS);
 addComment("/tmp/ocr_text.txt", $target);
+unlink("/tmp/ocr_text.txt");
 
