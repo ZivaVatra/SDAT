@@ -97,12 +97,6 @@ $RANDSTR =~ s/\n//g;
 $NAME =~ s/\n//g;
 
 
-sub waituntildone {
-	my $pid = shift;
-	return waitpid($pid,0) ;
-}
-
-
 sub process_file {
 	my $_infile = shift;
 	# Parse out the file
