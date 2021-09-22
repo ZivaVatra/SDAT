@@ -55,10 +55,15 @@ our $HAS_ADF;
 # Extra options for tesseract
 our $TESSOPTS=" --tessdata-dir /usr/share/tesseract-ocr/4.00/tessdata/ -l eng ";
 
+# options
+our $no_ocr = 0;
+if (defined($ENV{'SDAT_NO_OCR'})) {
+	$no_ocr = $ENV{'SDAT_NO_OCR'};
+}
 require "./lib/core.pm";
 
 sub usage {
-	die("Usage: $0 \$configuration_file \$target_folder \$target_scan_filename\n");
+	die("Usage: $0 \$configuration_file \$scanner_file \$target_folder \$target_scan_filename\n");
 }
 my $CONF_FILE=shift or usage(); # Configuration
 my $SPROFILE=shift or usage(); # Scanner profile
@@ -103,7 +108,11 @@ sub process_file {
 	my ($filename, $dirs, $suffix) = fileparse($_infile, qr/\.[^.]*/);
 
 	# ocr the image, save to text file
-	waituntildone(ocrit("$_infile","$dirs/$filename", $TESSOPTS));
+	if ($no_ocr == 0) {
+		waituntildone(ocrit("$_infile","$dirs/$filename", $TESSOPTS));
+	} else {
+		rename($_infile, "$dirs/$filename"); # Just move the file
+	}
 
 	# Convert to png
 	my $pngfile = $filename;
