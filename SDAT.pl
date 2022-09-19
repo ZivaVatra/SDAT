@@ -56,9 +56,9 @@ our $HAS_ADF;
 our $TESSOPTS=" --tessdata-dir /usr/share/tesseract-ocr/4.00/tessdata/ -l eng ";
 
 # options
-our $no_ocr = 0;
+our $NO_OCR = 0;
 if (defined($ENV{'SDAT_NO_OCR'})) {
-	$no_ocr = $ENV{'SDAT_NO_OCR'};
+	$NO_OCR = $ENV{'SDAT_NO_OCR'};
 }
 require "./lib/core.pm";
 
@@ -107,11 +107,9 @@ sub process_file {
 	# Parse out the file
 	my ($filename, $dirs, $suffix) = fileparse($_infile, qr/\.[^.]*/);
 
-	# ocr the image, save to text file
-	if ($no_ocr == 0) {
+	# ocr the image, save to text file, if NO_OCR is false
+	if ($NO_OCR == 0) {
 		waituntildone(ocrit("$_infile","$dirs/$filename", $TESSOPTS));
-	} else {
-		rename($_infile, "$dirs/$filename"); # Just move the file
 	}
 
 	# Convert to png
