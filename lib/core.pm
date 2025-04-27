@@ -70,7 +70,7 @@ sub ocrit {
 sub topng {
 	my $input = shift;
 	my $output = shift;
-	exe("magick convert -compress Zip $input $output");
+	exe("magick -compress Zip $input $output");
 }
 
 sub addComment {
