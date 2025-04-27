@@ -53,7 +53,7 @@ our $DEVICE;
 our $EXTRAOPTS="";
 our $HAS_ADF;
 # Extra options for tesseract
-our $TESSOPTS=" --tessdata-dir /usr/share/tesseract-ocr/4.00/tessdata/ -l eng ";
+our $TESSOPTS=" -l eng ";
 
 # options
 our $NO_OCR = 0;
