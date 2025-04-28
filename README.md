@@ -3,6 +3,16 @@ SDAT - Scanned document archival tool
 
 News:
 ----
+
+- Version3 in development, changes:
+* Replaced in-house multiprocessing with Forks::Super
+* Logic refactoring into Classes
+* General cleanup of logic
+* Restricted output to two modes: Image or PDF, with tagging for each
+** The text is added as an Exif comment on images
+** The text is added as a metadata comment on PDFs
+
+
 - April 2025: Updates to version to take into account changes since 2021, specifically:
 * Tweaks for cross-compatibility and SDAT tested on FreeBSD
 * Updates to support newer tesseract and ImageMagick commands
