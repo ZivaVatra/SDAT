@@ -6,6 +6,7 @@ News:
 - April 2025: Updates to version to take into account changes since 2021, specifically:
 * Tweaks for cross-compatibility and SDAT tested on FreeBSD
 * Updates to support newer tesseract and ImageMagick commands
+* Added some of the configs I use most often (e.g. PDF archiving)
 
 - April 2021: New version 2 released, this has some new features, including configurable jobs and scanner definitions. Look at documentation below for more info. The old version (now renamed version1) will live in the version1 branch, if anyone needs it.
 
