@@ -2,10 +2,9 @@
 # vim: ts=4 ai
 # SDAT - Scanned document archival tool
 #
-#Copyright 2020 Ziva-Vatra, Belgrade
+#Copyright Ziva-Vatra, Belgrade
 #(www.ziva-vatra.com, mail: info@ziva_vatra.com)
 #
-# Project URL: http://www.ziva-vatra.com/index.php?aid=71&id=U29mdHdhcmU=
 # Project REPO: https://github.com/ZivaVatra/SDAT
 #
 #Licensed under the GNU GPL. Do not remove any information from this header
@@ -41,6 +40,8 @@
 #
 
 use strict;
+use lib "./";
+use SDAT::core;
 
 use POSIX "sys_wait_h";
 use File::Path "make_path";
@@ -50,18 +51,18 @@ use File::Basename "fileparse";
 our $SCAN_DPI=0;
 # Extra options for scanimage, for specific scanners
 our $DEVICE;
-our $EXTRAOPTS="";
+our @EXTRAOPTS;
 our $HAS_ADF;
+our $OUTFORMAT = "pdf";
 # Extra options for tesseract
-our $TESSOPTS=" -l eng ";
+our @TESSOPTS=("-l", "eng");
+our $ENABLE_DUPLEX=1;
 
 # options
 our $NO_OCR = 0;
 if (defined($ENV{'SDAT_NO_OCR'})) {
 	$NO_OCR = $ENV{'SDAT_NO_OCR'};
 }
-require "./lib/core.pm";
-
 sub usage {
 	die("Usage: $0 \$configuration_file \$scanner_file \$target_folder \$target_scan_filename\n");
 }
@@ -81,108 +82,58 @@ die "Couldn't interpret the scanner profile file ($SPROFILE) that was given.\nEr
 
 # If DPI is still "0", we have invalid config, so cannot continue
 die("Invalid configuration file detected, cannot continue.\n") if $SCAN_DPI == 0;
-die("Invalid sprofile detected, cannot continue.\n") unless defined($DEVICE);
-
-
-my $TPATH="/tmp/scanning/";
-if (! -d $TPATH) {
-	print("Creating temporary path\n");
-	make_path($TPATH);
-}
-if (! -d $FINALDST) {
-	print("Creating output path\n");
-	make_path($FINALDST);
-}
+die("Invalid scanner profile detected, cannot continue.\n") unless defined($DEVICE);
 
 
 
 my $RANDSTR=`head -c 20 /dev/urandom  | md5sum | cut -d' ' -f 1`;
 $RANDSTR =~ s/\n//g;
-
 $NAME =~ s/\n//g;
 
 
-sub process_file {
-	my $_infile = shift;
-	# Parse out the file
-	my ($filename, $dirs, $suffix) = fileparse($_infile, qr/\.[^.]*/);
-
-	# ocr the image, save to text file, if NO_OCR is false
-	if ($NO_OCR == 0) {
-		waituntildone(ocrit("$_infile","$dirs/$filename", $TESSOPTS));
-	}
-
-	# Convert to png
-	my $pngfile = $filename;
-	$pngfile =~ s/$RANDSTR/$NAME/g;
-	$pngfile .= ".png";
-	
-	print("Filename: $filename, dirs: $dirs, suffix: $suffix pngfile: $pngfile\n");
-
-	topng("$_infile","$dirs/$pngfile");
-
-	addComment("$dirs/$filename.txt","$dirs/$pngfile");
-
-	exe("mv -v $dirs/$pngfile $FINALDST/");
-	# Once all done, remove the infile
-	unlink($_infile);
-
-	return 0;
-}
-	
-
-
-#Create the tmpdir if it doesn't exist
-unless (-e "$TPATH/scan.$RANDSTR/") { make_path("$TPATH/scan.$RANDSTR/"); }
+my $scanCore = SDAT::core->new({
+	"resolution" => $SCAN_DPI,
+	"outdir" => $FINALDST,
+	"filePattern" => $NAME,
+	"scanOpts" => @EXTRAOPTS,
+	"device" => $DEVICE,
+	"tessOpts" => @TESSOPTS,
+	"OCR" => $NO_OCR,
+	"hasADF" => $HAS_ADF,
+	"duplex" => $ENABLE_DUPLEX,
+	"outFormat" => $OUTFORMAT
+	});
 
 # 1. Scan the images to a temporary folder
 # As this can take a while, we fork
 my $pid = fork();
 if ($pid == 0) {
-	if($HAS_ADF) {
-		exit(scanit_adf($SCAN_DPI,"$TPATH/scan.$RANDSTR/", $RANDSTR, $EXTRAOPTS, $DEVICE));
-	} else {
-		exit(scanit($SCAN_DPI,"$TPATH/scan.$RANDSTR/", $RANDSTR, $EXTRAOPTS, $DEVICE));
-	}
+	$scanCore->scan();
+	exit;
 }
 
 #While the above is scanning, we sit and wait for files to be created,
 # Then process them as they arrive
 my $counter = 3;
 while(1) {
-	sleep(5); # 5 second wait
+	sleep(3); 
 
-	#2. Loop through images, for each one do the OCR, and move to dest
-	my @outfiles = `find $TPATH/scan.$RANDSTR/*.tiff 2>/dev/null`;
-	my @pids;
-		
+	# Loop through images, for each one do the OCR, and move to dest
+	my @outfiles = glob("$scanCore->{tmpDIR}/$scanCore->{filePattern}*.tiff");
 	# As long as the scanning pid is not dead, reset
 	# counter
 	if (waitpid($pid, WNOHANG) != -1) {
 		$counter = 3;
 	}
 
-	foreach(@outfiles) {
-		# Every time we have a file, we reset the counter
-		s/\n//g;
-		print("Processing image $_\n");
+	Forks::Super::pmap { $scanCore->OCR($_) } {timeout => 120}, @outfiles;
 	
-		my $pid = fork();
-		if ($pid == 0) {
-			exit(process_file($_));
-		} else {
-			push(@pids, $pid);
-		}
-			
-	}
 	print("Waiting for processing pid\n");
-	foreach(@pids) {
-		print(" $_");
-		waituntildone($_);
-	}
+	Forks::Super::waitall();
+
 	if ($counter-- <= 0) {
 		print(" Finished!\n");
-		# We have reached end of coutdown with no files
+		# We have reached end of countdown with no files
 		# and dead scanning PID, quit loop
 		last;
 	}
@@ -192,5 +143,8 @@ if (defined(&callback_last)) {
 	callback_last();
 }
 
+sub process {
+	my $inFile = shift;
+}
 # When all is done, remove tmp folder
-exe("rm -rv $TPATH/scan.$RANDSTR");
+#exe("rm -rv $TPATH/scan.$RANDSTR");

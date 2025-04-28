@@ -8,8 +8,8 @@ News:
 * Replaced in-house multiprocessing with Forks::Super
 * Logic refactoring into Classes
 * General cleanup of logic
-* Restricted output to two modes: Image or PDF, with tagging for each
-** The text is added as an Exif comment on images
+* Restricted output to two modes: PNG or PDF, with tagging for each
+** The text is added as an Exif comment on PNGs
 ** The text is added as a metadata comment on PDFs
 
 
@@ -187,9 +187,9 @@ Development
 
 If you want to help develop SDAT, even if it just to define more configs, please follow these procedures:
 
-1. Branch off the "version2" branch in git
+1. Branch off the "version3" branch in git
 2. make your changes in your own branch, test etc..
-3. When ready, then issue a merge request to version2 branch, which I can review and merge if all is well.
+3. When ready, then issue a merge request to version3 branch, which I can review and merge if all is well.
 4. Once tested and ready for release, I will merge to master, which should always be a stable working and bug free branch.
 
 
