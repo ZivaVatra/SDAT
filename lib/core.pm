@@ -17,14 +17,17 @@ use Forks::Super;
 use File::Path qw(make_path);
 package SDAT::core;
 
-# Constructor options:
-#		"resolution"
-#		"outdir"
-#		"filePattern"
-#		"scanOpts"
-#		"device"
-#		"tessOpts"
-#		"OCR"
+# Constructor options
+# Format: "key" (type:default)  //comment
+#	"resolution" (integer)
+#	"outdir" (string)
+#	"filePattern" (string)
+#	"scanOpts" (list)
+#	"device" (string)
+#	"tessOpts" (list)
+#	"OCR" (bool)
+#	"hasADF" (bool:0)
+#	"duplex" (bool:1) //this only applies if there is an Auto document feeder
 
 sub new {
 	# Check if all the binaries we need are available
@@ -52,7 +55,7 @@ sub _checkDeps {
 
 sub scan {
 	my $self = shift;
-	if ($self->{ADF} == 1) {
+	if ($self->{hasADF} == 1) {
 		push(@{$self->{scanOpts}}, ["--source", "ADF Duplex"]);
 	}
 
