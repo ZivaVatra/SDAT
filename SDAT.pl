@@ -124,11 +124,12 @@ while(1) {
 	if (waitpid($pid, WNOHANG) != -1) {
 		$counter = 3;
 	}
-
-	Forks::Super::pmap { $scanCore->OCR($_) } {timeout => 120}, @outfiles;
+	if(@outfiles) {
+		Forks::Super::pmap { $scanCore->OCR($_) } {timeout => 120}, @outfiles;
+		Forks::Super::waitall();
+	}
 	
 	print("Waiting for processing pid\n");
-	Forks::Super::waitall();
 
 	if ($counter-- <= 0) {
 		print(" Finished!\n");
