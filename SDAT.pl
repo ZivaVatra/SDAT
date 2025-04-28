@@ -90,18 +90,17 @@ my $RANDSTR=`head -c 20 /dev/urandom  | md5sum | cut -d' ' -f 1`;
 $RANDSTR =~ s/\n//g;
 $NAME =~ s/\n//g;
 
-
 my $scanCore = SDAT::core->new({
 	"resolution" => $SCAN_DPI,
-	"outdir" => $FINALDST,
+	"outDIR" => $FINALDST,
 	"filePattern" => $NAME,
-	"scanOpts" => @EXTRAOPTS,
+	"scanOpts" => \@EXTRAOPTS,
 	"device" => $DEVICE,
-	"tessOpts" => @TESSOPTS,
+	"tessOpts" => \@TESSOPTS,
 	"OCR" => $NO_OCR,
 	"hasADF" => $HAS_ADF,
 	"duplex" => $ENABLE_DUPLEX,
-	"outFormat" => $OUTFORMAT
+	"outFormat" => $OUTFORMAT,
 	});
 
 # 1. Scan the images to a temporary folder

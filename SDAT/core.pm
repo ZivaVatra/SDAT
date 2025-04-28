@@ -4,7 +4,7 @@
 # File Created: Mon Apr 28 14:06:04 CEST 2025
 # Copyright 2025 Ziva-Vatra, Belgrade (www.ziva-vatra.com)
 #
-# Project REPO: https://github.com/ZivaVatra/SDAT
+# Project Repository: https://github.com/ZivaVatra/SDAT
 #
 #Licensed under the GNU GPL. Do not remove any information from this header
 #(or the header itself). If you have modified this code, feel free to add your
@@ -41,7 +41,7 @@ package SDAT::core;
 # Constructor options
 # Format: "key" (type:default)  //comment
 #	"resolution" (integer)
-#	"outdir" (string)
+#	"outDIR" (string)
 #	"filePattern" (string)
 #	"scanOpts" (list)
 #	"device" (string)
@@ -58,8 +58,8 @@ sub new {
 
 	my $GUID = Data::GUID->new()->as_string();
 	$self->{tempDIR} = "/tmp/SDAT/$GUID";
-	sub { print "Creating temp directory\n"; make_path($self->{tempDIR})} unless (-d $self->{tempDIR});
-	sub { print "Creating output directory\n"; make_path($self->{outdir})} unless (-d $self->{outdir});
+	File::Path::make_path($self->{tempDIR}) unless (-d $self->{tempDIR});
+	File::Path::make_path($self->{outDIR}) unless (-d $self->{outDIR});
 	die("Output format $self->{outFormat} not valid, only PNG and PDF supported\n") unless (
 		$self->{outFormat} =~ m/(PDF|PNG)/i
 	);
@@ -86,28 +86,45 @@ sub _checkDeps {
 sub scan {
 	my $self = shift;
 	if ($self->{hasADF} == 1) {
-		push(@{$self->{scanOpts}}, ["--source", "ADF Duplex"]);
+		push(@{$self->{scanOpts}}, "--source", "ADF Duplex");
 	}
 
 	die("Failed to scan, got error: $!\n") if system(
-		"scanimage", "-v", "-p", "--format=tiff",
+		"scanimage", "-v", "-p", "--format=png",
 		"-d", $self->{device},
-		"--resolution", $self->{resolution},
-		$self->{scanOpts},
-		"--batch=$self->{tmpDIR}/$self->{filePattern}_%02d.tiff"
+		"--resolution", $self->{resolution}
+		, @{$self->{scanOpts}},
+		"--batch=$self->{tempDIR}/$self->{filePattern}_%02d.png"
 	);
+} 
+
+sub writeFormatBatch {
+	my $self = shift;
+	my @files = glob("$self->{tempDIR}/$self->{filePattern}*.png");
+
 	if ($self->{OCR} == 1) {
-		my @files = glob("$self->{tmpDIR}/$self->{filePattern}*.tiff");
-		Forks::Super::pmap { _OCR($_) } {timeout => 120}, @files;
+		Forks::Super::pmap { $self->OCR($_) } {timeout => 120}, @files;
+	}
+	Forks::Super::waitall();
+
+	if ($self->outFormat =~ m/PDF/i) {
+		$self->mergePDF(@files);
+	} else {
+		Forks::Super::pmap { 
+			$self->_writeExif($_);
+		} {timeout => 120}, @files;
 	}
 }
+
 sub OCR {
 	my $self = shift;
     my $inputImage = shift;
     my $outputFile = $inputImage;
-	$outputFile =~ s/\.tiff^/\.OCR/;
+	$outputFile =~ s/\.png^/\.OCR/;
 	# If the output file already exists, do nothing
-	return if (-e $outputFile);
+	# Tesseract "helpfully" appends .txt to our files
+	# hence the addition
+	return if (-e "$outputFile.txt");
     die("OCR failed: $!\n") if system(
 		"tesseract",
 		$inputImage,
@@ -117,13 +134,15 @@ sub OCR {
 }
 
 sub _writeExif {
-	my $inFile = shift;
-	my $inText = shift;
+	my $self = shift;
+	my $file = shift;
+	my $text = $file;
+	$text =~ s/\.\w+^/\.OCR\.txt/;
 	die("EXIF writing failed: $!\n") if system(
 		"exiv2", "-M",
 		"set", "Exif.Photo.UserComment", "charset=Ascii",
-		$inText,
-		$inFile
+		$text,
+		$file
 	);
 }
 
