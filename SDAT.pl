@@ -126,7 +126,6 @@ while(1) {
 	}
 	if(@outfiles) {
 		Forks::Super::pmap { $scanCore->OCR($_) } {timeout => 120}, @outfiles;
-		Forks::Super::waitall();
 	}
 	
 	print("Waiting for processing pid\n");
@@ -137,6 +136,7 @@ while(1) {
 		# and dead scanning PID, quit loop
 		last;
 	}
+	Forks::Super::waitall(); # We wait for any children to finish their processing
 }
 # Finally, we check to see if callback_last function is defined. If it is, we execute
 if (defined(&callback_last)) {
