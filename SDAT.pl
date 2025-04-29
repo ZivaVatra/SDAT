@@ -53,11 +53,14 @@ our $SCAN_DPI=0;
 our $DEVICE;
 our @EXTRAOPTS;
 our $HAS_ADF;
-our $OUTFORMAT = "pdf";
+our $OUTFORMAT = "null";
 # Extra options for tesseract
 our @TESSOPTS=("-l", "eng");
 our $ENABLE_DUPLEX=1;
-
+# We define this here so that it is available in the config file.
+# We don't assign a value however until we have the "scanCore" class
+# instantiated, after which we know what the temp path will be
+our $TEMPDIR; 
 # options
 our $NO_OCR = 0;
 if (defined($ENV{'SDAT_NO_OCR'})) {
@@ -104,6 +107,9 @@ my $scanCore = SDAT::core->new({
 	"duplex" => $ENABLE_DUPLEX,
 	"outFormat" => $OUTFORMAT,
 	});
+
+# Assigned so that it is available to callback_last;
+$TEMPDIR = $scanCore->{tempDIR};
 
 # 1. Scan the images to a temporary folder
 # As this can take a while, we fork
