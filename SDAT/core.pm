@@ -123,15 +123,14 @@ sub mergePDF {
 	# for each page, concatenate them and set the entire thing as a comment. I guess I will find out
 	# if the PDF spec sets a limit on comment size...
 
-	my $text;
+	my $text = "";
 	my $self = shift;
 	my $files = shift;
 	if ($self->{OCR} == 1) {
-		foreach(@{$files}) {
-			print "mergePDF: $_\n";
-			my $textFile = $_;
-			$textFile =~ s/\.png/\.OCR\.txt/;
-			warn("Unable to find OCR text for '$_'! Cannot add to PDF.") unless (-f $textFile);
+		foreach my $file (@{$files}) {
+			print "mergePDF: $file\n";
+			my $textFile = "$file.txt";
+			warn("Unable to find OCR text for '$file'! Cannot add to PDF.") unless (-f $textFile);
 			open(FD, $textFile);
 			while(<FD>){
 				chomp;
@@ -139,9 +138,16 @@ sub mergePDF {
 			}
 			close(FD);
 		}
+		# If despite OCR, we have no data, we update the text to indicate this
+		if ($text eq "") {
+			$text = "NO OCR DATA captured";
+		}
 	} else {
-		print "NO_OCR set, skipping.\n";
-		$text = "NO_OCR";
+		print "OCR disabled, skipping.\n";
+		$text = "OCR disabled";
+	}
+	foreach(@{$files}) {
+		print "merging file: $_\n";
 	}
 	die("Failed to create PDF: $!") if system(
 		"magick", 
@@ -173,26 +179,23 @@ sub mergePDF {
 sub OCR {
 	my $self = shift;
     my $inputImage = shift;
-    my $outputFile = $inputImage;
-	$outputFile =~ s/\.png^/\.OCR/;
 	# If the output file already exists, do nothing
 	# Tesseract "helpfully" appends .txt to our files
 	# hence the addition
-	return if (-e "$outputFile.txt");
+	return if (-e "$inputImage.txt");
     die("OCR failed: $!\n") if system(
 		"tesseract",
 		$inputImage,
-		$outputFile,
-		$self->{tessOpts}
+		$inputImage, # tesseract auto-appends .txt
+		@{$self->{tessOpts}}
 	);
 }
 
 sub _writeExif {
 	my $self = shift;
 	my $file = shift;
-	my $text = $file;
-	$text =~ s/\.\w+^/\.OCR\.txt/;
-	die("EXIF writing failed: $!\n") if system(
+	my $text = "$file.txt";
+	die("EXIF write failed: $!\n") if system(
 		"exiv2", "-M",
 		"set", "Exif.Photo.UserComment", "charset=Ascii",
 		$text,

@@ -63,6 +63,8 @@ our $NO_OCR = 0;
 if (defined($ENV{'SDAT_NO_OCR'})) {
 	$NO_OCR = $ENV{'SDAT_NO_OCR'};
 }
+our $OCR_ENABLED = not $NO_OCR; # backwards compatibility, NO_OCR is deprecated and will be removed in future
+
 sub usage {
 	die("Usage: $0 \$configuration_file \$scanner_file \$target_folder \$target_scan_filename\n");
 }
@@ -97,7 +99,7 @@ my $scanCore = SDAT::core->new({
 	"scanOpts" => \@EXTRAOPTS,
 	"device" => $DEVICE,
 	"tessOpts" => \@TESSOPTS,
-	"OCR" => $NO_OCR,
+	"OCR" => $OCR_ENABLED,
 	"hasADF" => $HAS_ADF,
 	"duplex" => $ENABLE_DUPLEX,
 	"outFormat" => $OUTFORMAT,
