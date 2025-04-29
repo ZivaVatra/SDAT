@@ -115,7 +115,7 @@ if ($pid == 0) {
 # Then process them as they arrive
 my $counter = 3;
 while(1) {
-	sleep(3); 
+	sleep(1);
 
 	# Loop through images, for each one do the OCR, and move to dest
 	my @outfiles = glob("$scanCore->{tmpDIR}/$scanCore->{filePattern}*.tiff");
@@ -142,6 +142,9 @@ while(1) {
 if (defined(&callback_last)) {
 	callback_last();
 }
+
+# When all processing is complete, we write out our PNGs or PDFs
+$scanCore->writeFormatBatch() or die("Could not write output!");
 
 sub process {
 	my $inFile = shift;

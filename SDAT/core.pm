@@ -107,13 +107,67 @@ sub writeFormatBatch {
 	}
 	Forks::Super::waitall();
 
-	if ($self->outFormat =~ m/PDF/i) {
-		$self->mergePDF(@files);
+	if ($self->{outFormat} =~ m/PDF/i) {
+		return $self->mergePDF(\@files);
 	} else {
 		Forks::Super::pmap { 
 			$self->_writeExif($_);
 		} {timeout => 120}, @files;
+		return 1;
 	}
+}
+
+sub mergePDF {
+	# Unlike images, where each image has its OCR'd text in its EXIF header, PDFs are multipage
+	# and we can't set a comment per page, so what we have to do is load up all the OCR text files
+	# for each page, concatenate them and set the entire thing as a comment. I guess I will find out
+	# if the PDF spec sets a limit on comment size...
+
+	my $text;
+	my $self = shift;
+	my $files = shift;
+	if ($self->{OCR} == 1) {
+		foreach(@{$files}) {
+			print "mergePDF: $_\n";
+			my $textFile = $_;
+			$textFile =~ s/\.png/\.OCR\.txt/;
+			warn("Unable to find OCR text for '$_'! Cannot add to PDF.") unless (-f $textFile);
+			open(FD, $textFile);
+			while(<FD>){
+				chomp;
+				$text .= $_;
+			}
+			close(FD);
+		}
+	} else {
+		print "NO_OCR set, skipping.\n";
+		$text = "NO_OCR";
+	}
+	die("Failed to create PDF: $!") if system(
+		"magick", 
+		@{$files},
+		"-define", q~pdf:Producer="SDAT - https://github.com/ZivaVatra/SDAT"~,
+		"-define", q~pdf:Author="SDAT - https://github.com/ZivaVatra/SDAT"~,
+		"-define", qq/pdf:Title="$self->{filePattern}"/,
+		"-define", qq/pdf:Keywords="$text"/,
+		"$self->{outDIR}/$self->{filePattern}.pdf");
+
+	# From what I can see, PDF does not have the ability to set a comment field,
+	# however the PDF standard does support comments, you just have to prefix '%'
+	# Ideally done at the start of the PDF, but before the '%PDF-1.3' definition
+	my $pdfData;
+	open(FD, "$self->{outDIR}/$self->{filePattern}.pdf") or die("Failed to open PDF for read: $!");
+	$pdfData = <FD>; # First line is our PDF definition
+	$pdfData .= "%$text\n"; # We add our text as a PDF comment
+	while(<FD>) {
+		$pdfData .= $_; #Load the rest as is
+	};
+	close(FD);
+	# Now write the data back
+	open(FD, ">$self->{outDIR}/$self->{filePattern}.pdf") or die("Failed to open PDF for write: $!");
+	print(FD $pdfData);
+	close(FD);
+	return 1;
 }
 
 sub OCR {
