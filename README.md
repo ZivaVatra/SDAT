@@ -67,7 +67,8 @@ Will use my Fujistu ADF scanner to scan all the pages in the tray, following the
   /storage/backups/scanned_documents/2020/energy_bill_03.png
   /storage/backups/scanned_documents/2020/energy_bill_04.png
 ```
-In this case, it is a two page document, double sided, so we end up with 4 numbered pages in total.
+In this case, it is a two page document, double sided, so we end up with 4 numbered pages in total. 
+If however you select to have PDF output, then single and multi-page is treated the same, and you get a single `$target_scan_filename.pdf` in your output directory.
 
 When ADF is supported, SDAT will scan each page until the tray is empty. While doing this, in the background it will start the process of OCR and conversion. Once the scanning is done, the executable will wait until all processing child process are done.
 
