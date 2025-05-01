@@ -26,7 +26,7 @@ New version 2 released, this has some new features, including configurable jobs 
 
 ## Overview:
 
-SDAT started off as a bash script sometime before 2013 to handle to handle archival of Documents/Bills/Invoices/etc...
+SDAT started off as a bash script sometime before 2006 to handle to handle archival of Documents/Bills/Invoices/etc... It was publicly released as Open Source around 2013 by explicit request, since then I've kept using it for archiving my paperwork in a searchable way.
 
 The basic idea is of an automated system that scans the page, runs OCR on the text, and saves the text to the comment field in the metadata as an image. 
 
