@@ -58,7 +58,8 @@ The $configuration_file is a configuration file for your job. For more informati
 "$output_folder" is the target where your files will be saved, while "$prefix" is the name of the file. If you only scan one file without ADF, this will just end up being "$prefix.png". If you are using an ADF scanner with multiple scanned pages, then each scan will be separate file, with the format $prefix\_$02d. For example, running:
 
 ```
-./SDAT_ADF.pl ./scanners/fujitsu_snapscan.scanner ./configs/archive.conf /storage/backups/scanned_documents/2020/ energy_bill```
+./SDAT_ADF.pl ./scanners/fujitsu_snapscan.scanner ./configs/archive.conf /storage/backups/scanned_documents/2020/ energy_bill
+```
 Will use my Fujistu ADF scanner to scan all the pages in the tray, following the "archive" configuration, which is a high quality archival PNG store, with OCR metadata. When done, the output should look like this:
 ```
   /storage/backups/scanned_documents/2020/energy_bill_01
