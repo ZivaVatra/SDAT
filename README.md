@@ -25,7 +25,6 @@ New version 2 released, this has some new features, including configurable jobs 
 
 
 Overview:
-----
 
 SDAT started off as a bash script sometime before 2013 to handle to handle archival of Documents/Bills/Invoices/etc...
 
@@ -33,7 +32,7 @@ The basic idea is of an automated system that scans the page, runs OCR on the te
 
 This allows indexing engines (e.g. Desktop search) to know what text the document contains, allowing for easier searching, while keeping the original text+format as an image scan in case you ever need to reproduce a pixel-original copy.
 
-Since being published online it has gone through three major interations (versions 1/2/3) so far, the latest one being written in Perl and supporting custom scanners, configurations and end-user logic.
+Since being published online it has gone through three major interations (versions 1/2/3) so far, the latest one being written in Perl and supporting custom scanners, configurations, multi-page PDF generation and end-user logic.
 
 Requirements:
 * tesseract
@@ -41,10 +40,9 @@ Requirements:
 * Exiv2 image metadata library
 * imageMagick tools
 * Forks::Super CPAN module
-# Data::GUID CPAN module
+* Data::GUID CPAN module
 
 Usage:
-----
 
 The main entry point is the "SDAT.pl" program. If run without arguments you see the following:
 
@@ -71,7 +69,6 @@ In this case, it is a two page document, double sided, so we end up with 4 numbe
 When ADF is supported, SDAT will scan each page until the tray is empty. While doing this, in the background it will start the process of OCR and conversion. Once the scanning is done, the executable will wait until all processing child process are done.
 
 Configuration
-----
 
 ## Scanner configuration file ##
 
@@ -148,7 +145,6 @@ The example above just prints hello world, but as noted in the comments, you hav
 
 
 Known methods of searching
-----
 
 1. "grep" (the one I use most often). A simple "grep -ir $search_term $scan_dir" works well enough to narrow down which scanned documents I am interested in
 2. GNOME used to have a desktop search tool called "Beagle" (http://beagle-project.org/) which would search image EXIF data. This was the original inspiration for writing this tool, as the ability to just type in text and get scanned images back really helped with archival. Indeed Beagle is what I used to originally use with SDAT. However it seems to be dead (last release was 2006), which I guess dates both me and this script quite a bit XD
@@ -156,7 +152,6 @@ Known methods of searching
 There is an entire article on wikipedia about it (https://en.wikipedia.org/wiki/Desktop_search) however i have not used anything apart from the above. I don't know what software supports indexing EXIF comments on images. If you have sucessfully used another piece of software, feel free to let me know and I can post it here :-) 
 
 Gotchas
-----
 
 Here are some gotchas I have come across when using this system:
 
@@ -168,12 +163,10 @@ Here are some gotchas I have come across when using this system:
 
 
 Future plans
-----
 * Create a third executable, probably called "reprocess", which will re-do the OCR and exif tagging stages on existing files. This is useful as when OCR technology improves, we can redo the OCR on our pre-scanned archives to improve them without needing the originals.
 
 
 Development
-----
 
 If you want to help develop SDAT, even if it just to define more configs, please follow these procedures:
 
