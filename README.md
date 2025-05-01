@@ -55,7 +55,7 @@ The `$scanner_file` is what holds your device ID, as well as any extra options y
 
 The `$configuration_file` is a configuration file for your job. For more information for the kind of things you can define in your job, please see "Configuratinon" section for more details.
 
-`$output_folder` is the target where your files will be saved, while "$prefix" is the name of the file. If you only scan one file without ADF, this will just end up being "$prefix.png". If you are using an ADF scanner with multiple scanned pages, then each scan will be separate file, with the format $prefix\_$02d. For example, running:
+`$output_folder` is the target where your files will be saved, while `$target_scan_filename` is the name of the file. If you only scan one file without ADF, this will just end up being `$target_scan_filename.png`. If you are using an ADF scanner with multiple scanned pages, then each scan will be separate file, with the format `$target_scan_filename\_$02d`. For example, running:
 
 ```
 ./SDAT_ADF.pl ./scanners/fujitsu_snapscan.scanner ./configs/archive.conf /storage/backups/scanned_documents/2020/ energy_bill
