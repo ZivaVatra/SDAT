@@ -9,7 +9,7 @@
 * General cleanup of logic
 * Restricted output to two modes: PNG or PDF, with tagging for each
 	* The text is added as an Exif comment on PNGs
-	* The text is added using the "keywords" field on PDFs, it is also added as a comment in the PDF source code.
+	* The text is added using the "keywords" field on PDFs, it is also added as a comment in the PDF source code as an extra (this is valid according to what I've read about the PDF standard).
 * Updates to the configuration files to work with the new logic.
 
 
@@ -92,7 +92,6 @@ the $DEVICE variable is the ID used by SANE to know which scanner to use. You ca
 ~ $./listDevices
 Detected devices:
 	epkowa:interpreter:001:012
-
 ```
 
 In this case only my Epson is powered on, the "epkowa" line would be placed in $DEVICE. 
@@ -103,7 +102,7 @@ $HAS_ADF is the final option, and it defines whether the specific scanner suppor
 
 The job configuration file allows you to define certain scan jobs, if you have more than one type of scan job. For example, I have two types of job scans. My "Archive", which is for long term high quality storage of OCR'ed files, usually for documents that I have since shredded, but may need a copy in future.
 
-There are example configuration in the "config" directory, but a minimal configuration would look like this:
+There are example configurations in the "config" directory, but a minimal configuration would look like this:
 ```
 $SCAN_DPI=450;
 $OCR_ENABLED=1;
@@ -117,7 +116,7 @@ $ENABLE_DUPLEX=1;
 
 I set 450 DPI as the scan size, as I find this is a good balance between file size, scanning speed, quality of OCR accuracy while being able to look similar to the original in print quality if there is a need to print it out.
 
-In this case we use `EXTRAOPTS` to specify the paper size and whether we want colour scanning. These options are added to the ones in the scanner configuration file. As I discovered that different scanners default to different things (colour/grayscale/black and white) I made this definition explicit.
+In this case we use `EXTRAOPTS` to specify the paper size and whether we want colour scanning. These options are added to the ones in the scanner configuration file. As I discovered that different scanners default to different things (e.g. colour/grayscale/black and white) I made this definition explicit.
 
 #### Extra option: callback_last
 
