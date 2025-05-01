@@ -48,7 +48,7 @@ package SDAT::core;
 #	"device" (string)
 #	"tessOpts" (list)
 #	"OCR" (bool)
-#	"hasADF" (bool:0)
+#	"enableADF" (bool:0)
 #	"duplex" (bool:1) //this only applies if there is an Auto document feeder
 #	"outFormat" (string:[png/pdf]) // we now limit to only these two
 
@@ -86,7 +86,7 @@ sub _checkDeps {
 
 sub scan {
 	my $self = shift;
-	if ($self->{hasADF} == 1) {
+	if ($self->{enableADF} == 1) {
 		push(@{$self->{scanOpts}}, "--source", "ADF Duplex");
 	}
 

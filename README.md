@@ -1,56 +1,63 @@
-SDAT - Scanned document archival tool
+# SDAT - Scanned document archival tool
 ====
 
-News:
+## News:
 ----
 
-- Version3 in development, changes:
-* Replaced in-house multiprocessing with Forks::Super
-* Logic refactoring into Classes
+### May 2025
+ Version3 in development, changes:
+* Replaced multiprocessing with Forks::Super
+* Code refactoring into newer Perl design, utilising Classes and strict mode.
 * General cleanup of logic
 * Restricted output to two modes: PNG or PDF, with tagging for each
-** The text is added as an Exif comment on PNGs
-** The text is added as a metadata comment on PDFs
+	* The text is added as an Exif comment on PNGs
+	* The text is added using the "keywords" field on PDFs, it is also added as a comment in the PDF source code.
+* Updates to the configuration files to work with the new logic.
 
 
-- April 2025: Updates to version to take into account changes since 2021, specifically:
-* Tweaks for cross-compatibility and SDAT tested on FreeBSD
-* Updates to support newer tesseract and ImageMagick commands
-* Added some of the configs I use most often (e.g. PDF archiving)
+### April 2025
+* Updates to version to take into account changes since 2021, specifically:
+	* Tweaks for cross-compatibility and SDAT tested on FreeBSD
+	* Updates to support newer tesseract and ImageMagick commands
+	* Added some of the configs I use most often (e.g. PDF archiving)
 
-- April 2021: New version 2 released, this has some new features, including configurable jobs and scanner definitions. Look at documentation below for more info. The old version (now renamed version1) will live in the version1 branch, if anyone needs it.
+### April 2021
+
+New version 2 released, this has some new features, including configurable jobs and scanner configurations. Look at documentation below for more info. The old version (now renamed version1) will live in the version1 branch, if anyone needs it.
 
 
 Overview:
 ----
 
-This is a collection of programs that handle archival of Documents/Bills/Invoices/etc...
+SDAT started off as a bash script sometime before 2013 to handle to handle archival of Documents/Bills/Invoices/etc...
 
 The basic idea is of an automated system that scans the page, runs OCR on the text, and saves the text to the comment field in the metadata as an image. 
 
-This allows indexing engines (e.g. Desktop search) to know what text the document contains, allowing for easier searching, while keeping the original text+format as an image scan. It saves a PNG file into the "./scans" output folder in CWD (configurable).
+This allows indexing engines (e.g. Desktop search) to know what text the document contains, allowing for easier searching, while keeping the original text+format as an image scan in case you ever need to reproduce a pixel-original copy.
 
-
-However as my needs have grown, so has the flexibility of the program. Its core purpose is the above, but it also allows you to configure it for more advanced processing.
+Since being published online it has gone through three major interations (versions 1/2/3) so far, the latest one being written in Perl and supporting custom scanners, configurations and end-user logic.
 
 Requirements:
-* tesseract (OCR)
-* sane-tools (SCANNING)
-* Exiv2 image metadata library (for adding text to comment field)
-* imageMagick tools (FORMAT CONVERSION)
+* tesseract
+* sane-tools
+* Exiv2 image metadata library
+* imageMagick tools
+* Forks::Super CPAN module
+# Data::GUID CPAN module
 
 Usage:
 ----
 
-The main entry point is the "SDAT.pl" program. Usage is as follows:
+The main entry point is the "SDAT.pl" program. If run without arguments you see the following:
 
-`SDAT.pl $scanner_definition $config_file $output_folder $prefix`
+```
+$#: ./SDAT.pl 
+Usage: ./SDAT.pl $configuration_file $scanner_file $target_folder $target_scan_filename
+```
 
-The $scanner_definition is what holds your device ID, as we all as any extra options you want to add to your scanner. Each scanner has variations in behviour and features, which can be defined here.
+The $scanner_file is what holds your device ID, as we all as any extra options you want to add to your scanner. Each scanner has variations in behviour and features, which can be defined here.
 
-If you don't know what your scanner ID is, the `get_device_names` program will list all the scanners SANE knows about, along with their ID's.
-
-The $config_file is a configuration file for your job. For more information for the kind of things you can define in your job, please see "Configuratinon" section.
+The $configuration_file is a configuration file for your job. For more information for the kind of things you can define in your job, please see "Configuratinon" section for more details.
 
 "$output_folder" is the target where your files will be saved, while "$prefix" is the name of the file. If you only scan one file without ADF, this will just end up being "$prefix.png". If you are using an ADF scanner with multiple scanned pages, then each scan will be separate file, with the format $prefix\_$02d. For example, running:
 
@@ -68,23 +75,23 @@ When ADF is supported, SDAT will scan each page until the tray is empty. While d
 Configuration
 ----
 
-## Scanner definition file ##
+## Scanner configuration file ##
 
-Each scanner is different, so to support multiple scanners, including a computer with multiple scanners attached, the concept of "scanner definion" files have been added in this version. This allows you to pass specific scanner configuration to SDAT, along with the scanner ID. I have included the definition files for my two scanners, but feel free to submit your own.
+Each scanner is different so to support multiple scanners, including a computer with multiple scanners attached, the concept of "scanner definion" files were created. This allows you to pass specific scanner configuration to SDAT, along with the scanner ID. I have included the definition files for my two scanners, but feel free to submit your own.
 The configuration looks like this:
 ```
-$EXTRAOPTS .= " --ald=no --df-action Stop --swdeskew=no --swcrop=no";
+@EXTRAOPTS .= qw/--ald=no --df-action Stop --swdeskew=no --swcrop=no/;
 $DEVICE="fujitsu:ScanSnap S500:14658";
 $HAS_ADF=1;
 1; # This is always needed at the end
 ```
 
-$EXTRAOPTS are options understood by the `scanimage` command, and any options can be passed. In this case we disabled SW deskew and cropping in the driver, and made the default action in case of error for the scanner to stop. "ald" is page "leading edge" detection, which I felt was not needed as we want a full scan, even if we overscan a bit, rather than risk cutting off bits of the document.
+`EXTRAOPTS` are options understood by the `scanimage` command, and any options can be passed. In this case we disabled SW deskew and cropping in the driver, and made the default action in case of error for the scanner to stop. "ald" is page "leading edge" detection, which I felt was not needed as we want a full scan, even if we overscan a bit, rather than risk cutting off bits of the document.
 
-the $DEVICE variable is the ID used by SANE to know which scanner to use. You can find out what your scanner(s) are by running `get_device_names`, like so:
+the $DEVICE variable is the ID used by SANE to know which scanner to use. You can find out what your scanner(s) are by running `listDevices`, like so:
 
 ```
-~ $./get_device_names
+~ $./listDevices
 Detected devices:
 	epkowa:interpreter:001:012
 
@@ -92,69 +99,54 @@ Detected devices:
 
 In this case only my Epson is powered on, the "epkowa" line would be placed in $DEVICE. 
 
-$HAS_ADF is the final option, and it defines whether the specific scanner support "ADF" (Auto document feeding). This is when you stick a stack of papers in a tray and it scans them all automatically. Depending on whether this is set or not, different logic paths in SDAT will be executed.
+$HAS_ADF is the final option, and it defines whether the specific scanner supports "ADF" (Auto document feeding). This is when you stick a stack of papers in a tray and it scans them all automatically. Depending on whether this is set or not, different logic paths in SDAT will be executed.
 
 ## Job configuration file ##
 
 The job configuration file allows you to define certain scan jobs, if you have more than one type of scan job. For example, I have two types of job scans. My "Archive", which is for long term high quality storage of OCR'ed files, usually for documents that I have since shredded, but may need a copy in future.
 
-Both configs are provided in the "configs" directory, but here is how they look like:
+There are example configuration in the "config" directory, but a minimal configuration would look like this:
+```
+$SCAN_DPI=450;
+$OCR_ENABLED=1;
+$OUTFORMAT="pdf";
+$ADF_ENABLED=1;
+$ENABLE_DUPLEX=1;
+@EXTRAOPTS .= qw/--page-height 320 --page-width 211 -x 211 -y 320 --mode color/;
+1; # This is always needed at the end
 
 ```
-$SCAN_DPI=600;
-# Extra options for scanimage, for specific scanners
-# These extra opts are for A4 paper size (defined as 210x297mm, and colour mode
-$EXTRAOPTS .= " --page-height 320 --page-width 211 -x 211 -y 300 --mode color";
-#And these for A5 (defined as 148 x 210mm)
-#$EXTRAOPTS .= " --page-height 211 --page-width 150 -x 150 -y 211 ";
+
+I set 450 DPI as the scan size, as I find this is a good balance between file size, scanning speed, quality of OCR accuracy while being able to look similar to the original in print quality if there is a need to print it out.
+
+In this case we use `EXTRAOPTS` to specify the paper size and whether we want colour scanning. These options are added to the ones in the scanner configuration file. As I discovered that different scanners default to different things (colour/grayscale/black and white) I made this definition explicit.
+
+### Extra option: callback_last
+
+As each job configuration file is in fact valid Perl code, this gives us a lot of flexibility. One thing I added is the "callback_last" option. If you define this subroutine in your config file, it will allow you to manipulate the scanned files and OCR text before they are merged to PDF (or EXIF tagged for Images) and sent to their destination.
+
+Here is a simple example with comments:
 ```
-
-I set 600 DPI as the scan size, as I find this is a good size to provide decent OCR accuracy, and it is also big enough to clearly see even small legal text. It can also be printed and still look similar to the original in print quality if needed.
-
-The $EXTRAOPTS in this case specify the paper size, and whether we want colour scanning. I found out that different scanners default to different modes (e.g my Epson defaults to colour scanning, but the Fujitsu to Black and White), so in the interests of being explicit, I defined this job config to always scan in colour.
-
-
-The next config is called "adf_email_pdf.conf", and it does what it says on the tin. I wrote this becauses I needed the ability to scan a bunch of documents, and generate a PDF small enough to be able to send via email. This is the opposite of the "Archive" config in that sense, as the documents were not being shredded I did not need very high quality archival copies.
-
-```
-$SCAN_DPI=100;
-# Extra options for scanimage, for specific scanners
-$EXTRAOPTS .= " --page-height 320 --page-width 211 -x 211 -y 300 --mode color";
-#And these for A5 (defined as 148 x 210mm)
-#$EXTRAOPTS .= " --page-height 211 --page-width 150 -x 150 -y 211 ";
-
-# This is an optional routine, which lets you define a final subroutine to act upon 
-# the scanned documents. In this example, we are:
-# 1. converting them from png to highly compressed JPEG (smaller for email)
-# 2. merging them into one final pdf
-# 3. deleting everything apart from the pdf in that folder
+# "callback_last" is an optional routine which lets you define a final subroutine to act upon 
+# the scanned documents before they reach their final destination (either as PNGs or
+# a merged PDF).
 #
 # Variables available:
-#	$FINALDST (final destiation, this is where your scanned documents end up)
+#	$FINALDST (final destination, this is where your scanned documents end up)
+#	$TEMPDIR (where our temporary files are prior to being merged to PDF
+#	and/or copied to $FINALDST).
 #	$NAME (the prefix defined as your argument)
+#
+# The file structure in $TEMPDIR is as follows:
+#	$NAME_%0d.png		# The scanned image as received from SANE
+#	$NAME_%0d.png.txt 	# The OCR'd text (if enabled and OCR successful)
 sub callback_last {
-	my @files = glob("$FINALDST/*.png");
-	my $arglist = "";
-	print "Converting png to compressed JPEG\n";
-	foreach(@files) {
-		my $outfile = $_;
-		$outfile =~ s/\.png/\.jpg/;
-		die("Could not convert $_\n") if system("convert -quality 85% $_ $outfile");
-		unlink($_); # Delete original if successful
-		$arglist .= "$outfile ";
-	}
-	print "Merging to PDF\n";
-	die("Could not merge to pdf $NAME.pdf\n") if system("convert $arglist $FINALDST/$NAME.pdf");
-	system("rm $arglist"); # Try to delete the jpeg files
+	print "Hello World!\n";
 }
-1; # This is always needed at the end
+
 ```
 
-As you can see, this config is a bit more complex, and it makes use of a powerful new feature of SDAT. The "callback_last" function. You have the ability to execute a custom function at the end of the scan, to do whatever you want to the resultant scanned documents. In this case, I had a small resolution (100DPI), then converted the files to JPEG (As they are smaller for colour scans), then merged them to a pdf file.
-
-If you have not yet noticed, the config files are in fact Perl code, so you have a lot of flexibility in how you configure things. You could even have things like $SCAN_DPI be dynamically generated on the fly, pulled in from another source, etc...
-
-As this is a program that is not designed for internet connectivity, or shared use by untrusted people, the system is designed for maximum flexibility and power.
+The example above just prints hello world, but as noted in the comments, you have access to the temporary directory, the final destination folder and the name as defined when you called the function. The file structure shows you how the layout looks, each page is suffixed 01/02/03/etc... There really is no limit to what you can do here, whatever is possible in Perl on your machine can be written here.
 
 
 Known methods of searching
@@ -170,7 +162,7 @@ Gotchas
 
 Here are some gotchas I have come across when using this system:
 
-* Don't invert the text half way through the scan. This isn't a problem if you are scanning a single document. However if you are scanning lots of little receipts as part of an expenses document, you can get it wrong. I did this (one of the receipts was 180 degrees off), and while nothing broke, tesseract did sit there and consume 100% CPU trying to decode the upside-down text until I got sick of waiting, killed it and then re-scanned with the text correctly up
+* Don't invert the text half way through the scan. This is not a problem with SDAT as such, but the underlying OCR software. Generally this isn't a problem if you are scanning a single document. However if you are scanning lots of little receipts as part of an expenses document you can put one upside down. I did this once and while nothing broke, tesseract did sit there and consume 100% CPU trying to decode the upside-down text until I got sick of waiting, killed it and then re-scanned with the receipt the right way up.
 
 * Make sure you have enough space in "/tmp". This software makes use of /tmp to store both the final copy and any intermidiate stages. On a 600dpi scan this means you could use a good 500MB of data in temp files. If you run out of space half way through a scan it can get messy (you get errors that indicate failure, but not that the reason may be lack of free space). 
 

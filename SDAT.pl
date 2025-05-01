@@ -95,6 +95,16 @@ my $RANDSTR=`head -c 20 /dev/urandom  | md5sum | cut -d' ' -f 1`;
 $RANDSTR =~ s/\n//g;
 $NAME =~ s/\n//g;
 
+# We have to make sure that if the job requests ADF support, 
+# that the scanner supports it. Fail with error otherwise.
+# If ADF is disabled then it doesn't matter whether the scanner supports
+# it, hence we don't check at all.
+if ($ADF_ENABLED == 1 ) {
+	if ($HAS_ADF != 1) {
+		die("Capability mismatch error: Our job configuration has ADF enabled but our scanner configuratinon does not support ADF.");
+	}
+}
+
 my $scanCore = SDAT::core->new({
 	"resolution" => $SCAN_DPI,
 	"outDIR" => $FINALDST,
@@ -103,7 +113,7 @@ my $scanCore = SDAT::core->new({
 	"device" => $DEVICE,
 	"tessOpts" => \@TESSOPTS,
 	"OCR" => $OCR_ENABLED,
-	"hasADF" => $HAS_ADF,
+	"enableADF" => $ADF_ENABLED,
 	"duplex" => $ENABLE_DUPLEX,
 	"outFormat" => $OUTFORMAT,
 	});
