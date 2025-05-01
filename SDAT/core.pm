@@ -35,7 +35,8 @@ use strict;
 use Forks::Super;
 $Forks::Super::ON_BUSY = 'block';
 use Data::GUID;
-use File::Path qw(make_path);
+use File::Path qw(make_path rmtree);
+use File::Copy qw(move);
 package SDAT::core;
 
 # Constructor options
@@ -113,9 +114,28 @@ sub writeFormatBatch {
 		Forks::Super::pmap { 
 			$self->_writeExif($_);
 		} {timeout => 120}, @files;
+		Forks::Super::waitall();
+		foreach(@files) {
+			my $outName = $_;
+			$outName =~ s/$self->{tempDIR}//g;
+			print "move $_ to $self->{outDIR}/$outName\n";
+			File::Copy::move($_,"$self->{outDIR}/$outName");
+    		if ($!{EINTR}) {
+				# Sometimes we get interrupted system calls, but the files is moved
+				# anyway, so we check to see if the file exists at destination
+				# before retrying
+				if ( not -f "$self->{outDIR}/$outName" ) {
+			        warn "File move interrupted, retrying...\n";
+					push(@files, $_); # re-add the failed file to the bottom of list
+				}
+			} else {
+				die("Failed to move file '$_': $!");
+			}
+		}
 		return 1;
 	}
 }
+
 
 sub mergePDF {
 	# Unlike images, where each image has its OCR'd text in its EXIF header, PDFs are multipage
@@ -146,6 +166,7 @@ sub mergePDF {
 		print "OCR disabled, skipping.\n";
 		$text = "OCR disabled";
 	}
+
 	foreach(@{$files}) {
 		print "merging file: $_\n";
 	}
@@ -194,11 +215,29 @@ sub OCR {
 sub _writeExif {
 	my $self = shift;
 	my $file = shift;
-	my $text = "$file.txt";
-	die("EXIF write failed: $!\n") if system(
+	my $text = "";
+
+	if ($self->{OCR} == 1) {
+		my $textFile = "$file.txt";
+		warn("Unable to find OCR text for '$file'! Cannot add to Exif data.") unless (-f $textFile);
+		open(FD, $textFile);
+		while(<FD>){
+			chomp;
+			$text .= $_;
+		}
+		close(FD);
+		# If despite OCR, we have no data, we update the text to indicate this
+		if ($text eq "") {
+			$text = "NO OCR DATA captured";
+		}
+	} else {
+		print "OCR disabled, skipping.\n";
+		$text = "OCR disabled";
+	}
+
+	die("EXIT write failed: $!") if system(
 		"exiv2", "-M",
-		"set", "Exif.Photo.UserComment", "charset=Ascii",
-		$text,
+		qq/set Exif.Photo.UserComment charset=Unicode $text/,
 		$file
 	);
 }
