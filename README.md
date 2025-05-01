@@ -21,7 +21,7 @@
 
 ### April 2021
 
-New version 2 released, this has some new features, including configurable jobs and scanner configurations. Look at documentation below for more info. The old version (now renamed version1) will live in the version1 branch, if anyone needs it.
+New version 2 released, this has some new features, including configurable jobs and scanner configurations. Look at documentation below for more info. The old version (now renamed version 1) will live in the version 1 branch, if anyone needs it.
 
 
 ## Overview:
@@ -34,7 +34,7 @@ So that is what SDAT does. It is an automated system that scans pages, runs OCR 
 
 This allows indexing engines (e.g. Desktop search) to know what text the document contains, allowing for easier searching, while keeping the original text+format as an image scan in case you ever need to reproduce a pixel-original copy.
 
-Since being published online it has gone through three major interations (versions 1/2/3) so far, the latest one being written in Perl and supporting custom scanners, configurations, multi-page PDF generation and end-user logic.
+Since being published online it has gone through three major iterations (versions 1/2/3) so far, the latest one being written in Perl and supporting custom scanners, configurations, multi-page PDF generation and end-user logic.
 
 Requirements:
 * tesseract
@@ -53,11 +53,11 @@ $#: ./SDAT.pl
 Usage: ./SDAT.pl $configuration_file $scanner_file $target_folder $target_scan_filename
 ```
 
-The `$scanner_file` is what holds your device ID, as well as any extra options you want to add to your scanner. Each scanner has variations in behviour and features, which can be defined here.
+The `$scanner_file` is what holds your device ID, as well as any extra options you want to add to your scanner. Each scanner has variations in behaviour and features, which can be defined here.
 
 The `$configuration_file` is a configuration file for your job. For more information for the kind of things you can define in your job.
 
-Please see "Configuratinon" section for more details of the above.
+Please see "Configuration" section for more details of the above.
 
 `$output_folder` is the target where your files will be saved, while `$target_scan_filename` is the name of the file. If you only scan one file without ADF, this will just end up being `$target_scan_filename.png`. If you are using an ADF scanner with multiple scanned pages, then each scan will be separate file, with the format `$target_scan_filename_$02d`. For example, running:
 
@@ -105,7 +105,7 @@ $HAS_ADF is the final option, and it defines whether this specific scanner suppo
 
 ### Job configuration file ##
 
-The job configuration file allows you to define certain scan jobs, if you have more than one type of scan job. For example, I have two types of job scans. My "Archive", which is for long term high quality storage of OCR'ed files, usually for documents that I have since shredded but may need a copy in future.
+The job configuration file allows you to define certain scan jobs, if you have more than one type of scan job. For example, I have two types of job scans. My "Archive", which is for long term high quality storage of OCRed files, usually for documents that I have since shredded but may need a copy in future.
 
 There are example configurations in the "config" directory, but a minimal configuration would look like this:
 ```
@@ -156,7 +156,7 @@ The example above just prints "hello world" but as noted in the comments, you ha
 1. "grep" (the one I use most often). A simple "grep -ir $search_term $scan_dir" works well enough to narrow down which scanned documents I am interested in
 2. GNOME used to have a desktop search tool called "Beagle" (http://beagle-project.org/) which would search image EXIF data. This was the original inspiration for writing this tool, as the ability to just type in text and get scanned images back really helped with archival. Indeed Beagle is what I used to originally use with SDAT. However it seems to be dead (last release was 2006), which I guess dates both me and this script quite a bit XD
 
-There is an entire article on wikipedia about it (https://en.wikipedia.org/wiki/Desktop_search) however i have not used anything apart from the above. I don't know what software supports indexing EXIF comments on images. If you have sucessfully used another piece of software, feel free to let me know and I can post it here :-) 
+There is an entire article on wikipedia about it (https://en.wikipedia.org/wiki/Desktop_search) however i have not used anything apart from the above. I don't know what software supports indexing EXIF comments on images. If you have successfully used another piece of software, feel free to let me know and I can post it here :-) 
 
 ## Gotchas
 
@@ -164,13 +164,13 @@ Here are some gotchas I have come across when using this system:
 
 * Don't invert the text half way through the scan. This is not a problem with SDAT as such, but the underlying OCR software. Generally this isn't a problem if you are scanning a single document. However if you are scanning lots of little receipts as part of an expenses document you can put one upside down. I did this once and while nothing broke, tesseract did sit there and consume 100% CPU trying to decode the upside-down text until I got sick of waiting, killed it and then re-scanned with the receipt the right way up.
 
-* Make sure you have enough space in "/tmp". This software makes use of /tmp to store both the final copy and any intermidiate stages. On a 600dpi scan this means you could use a good 500MB of data in temp files. If you run out of space half way through a scan it can get messy (you get errors that indicate failure, but not that the reason may be lack of free space). 
+* Make sure you have enough space in "/tmp". This software makes use of /tmp to store both the final copy and any intermediate stages. On a 600dpi scan this means you could use a good 500MB of data in temp files. If you run out of space half way through a scan it can get messy (you get errors that indicate failure, but not that the reason may be lack of free space). 
 
-* Leading from above, the software will delete its temporarily files from /tmp in the case of a successful scan and OCR. However if you cancel the program, or something raises an error, it does not delete the tmpfiles (this is useful for debugging). As such be aware you may have leftover datafiles using up space in /tmp that you may want to clear out. For many distros tmps is a ramdisk (tmpfs) so should be cleared on reboot, but for those where it isn't, you can accumulate a lot of wasted space.
+* Leading from above, the software will delete its temporarily files from /tmp in the case of a successful scan and OCR. However if you cancel the program, or something raises an error, it does not delete the tmpfiles (this is useful for debugging). As such be aware you may have leftover data files using up space in /tmp that you may want to clear out. For many distros tmps is a ramdisk (tmpfs) so should be cleared on reboot, but for those where it isn't, you can accumulate a lot of wasted space.
 
 
 ## Future plans
-* Create a third executable, probably called "reprocess", which will re-do the OCR and exif tagging stages on existing files. This is useful as when OCR technology improves, we can redo the OCR on our pre-scanned archives to improve them without needing the originals.
+* Create a third executable, probably called "reprocess", which will re-do the OCR and EXIF tagging stages on existing files. This is useful as when OCR technology improves, we can redo the OCR on our pre-scanned archives to improve them without needing the originals.
 
 
 ## Development
