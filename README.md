@@ -1,8 +1,6 @@
 # SDAT - Scanned document archival tool
-====
 
 ## News:
-----
 
 ### May 2025
  Version3 in development, changes:
