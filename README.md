@@ -24,7 +24,7 @@
 New version 2 released, this has some new features, including configurable jobs and scanner configurations. Look at documentation below for more info. The old version (now renamed version1) will live in the version1 branch, if anyone needs it.
 
 
-Overview:
+## Overview:
 
 SDAT started off as a bash script sometime before 2013 to handle to handle archival of Documents/Bills/Invoices/etc...
 
@@ -42,7 +42,7 @@ Requirements:
 * Forks::Super CPAN module
 * Data::GUID CPAN module
 
-Usage:
+## Usage:
 
 The main entry point is the "SDAT.pl" program. If run without arguments you see the following:
 
@@ -68,9 +68,9 @@ In this case, it is a two page document, double sided, so we end up with 4 numbe
 
 When ADF is supported, SDAT will scan each page until the tray is empty. While doing this, in the background it will start the process of OCR and conversion. Once the scanning is done, the executable will wait until all processing child process are done.
 
-Configuration
+## Configuration
 
-## Scanner configuration file ##
+### Scanner configuration file ##
 
 Each scanner is different so to support multiple scanners, including a computer with multiple scanners attached, the concept of "scanner definion" files were created. This allows you to pass specific scanner configuration to SDAT, along with the scanner ID. I have included the definition files for my two scanners, but feel free to submit your own.
 The configuration looks like this:
@@ -96,7 +96,7 @@ In this case only my Epson is powered on, the "epkowa" line would be placed in $
 
 $HAS_ADF is the final option, and it defines whether the specific scanner supports "ADF" (Auto document feeding). This is when you stick a stack of papers in a tray and it scans them all automatically. Depending on whether this is set or not, different logic paths in SDAT will be executed.
 
-## Job configuration file ##
+### Job configuration file ##
 
 The job configuration file allows you to define certain scan jobs, if you have more than one type of scan job. For example, I have two types of job scans. My "Archive", which is for long term high quality storage of OCR'ed files, usually for documents that I have since shredded, but may need a copy in future.
 
@@ -116,7 +116,7 @@ I set 450 DPI as the scan size, as I find this is a good balance between file si
 
 In this case we use `EXTRAOPTS` to specify the paper size and whether we want colour scanning. These options are added to the ones in the scanner configuration file. As I discovered that different scanners default to different things (colour/grayscale/black and white) I made this definition explicit.
 
-### Extra option: callback_last
+#### Extra option: callback_last
 
 As each job configuration file is in fact valid Perl code, this gives us a lot of flexibility. One thing I added is the "callback_last" option. If you define this subroutine in your config file, it will allow you to manipulate the scanned files and OCR text before they are merged to PDF (or EXIF tagged for Images) and sent to their destination.
 
@@ -144,14 +144,14 @@ sub callback_last {
 The example above just prints hello world, but as noted in the comments, you have access to the temporary directory, the final destination folder and the name as defined when you called the function. The file structure shows you how the layout looks, each page is suffixed 01/02/03/etc... There really is no limit to what you can do here, whatever is possible in Perl on your machine can be written here.
 
 
-Known methods of searching
+## Known methods of searching
 
 1. "grep" (the one I use most often). A simple "grep -ir $search_term $scan_dir" works well enough to narrow down which scanned documents I am interested in
 2. GNOME used to have a desktop search tool called "Beagle" (http://beagle-project.org/) which would search image EXIF data. This was the original inspiration for writing this tool, as the ability to just type in text and get scanned images back really helped with archival. Indeed Beagle is what I used to originally use with SDAT. However it seems to be dead (last release was 2006), which I guess dates both me and this script quite a bit XD
 
 There is an entire article on wikipedia about it (https://en.wikipedia.org/wiki/Desktop_search) however i have not used anything apart from the above. I don't know what software supports indexing EXIF comments on images. If you have sucessfully used another piece of software, feel free to let me know and I can post it here :-) 
 
-Gotchas
+## Gotchas
 
 Here are some gotchas I have come across when using this system:
 
@@ -162,11 +162,11 @@ Here are some gotchas I have come across when using this system:
 * Leading from above, the software will delete its temporarily files from /tmp in the case of a successful scan and OCR. However if you cancel the program, or something raises an error, it does not delete the tmpfiles (this is useful for debugging). As such be aware you may have leftover datafiles using up space in /tmp that you may want to clear out. For many distros tmps is a ramdisk (tmpfs) so should be cleared on reboot, but for those where it isn't, you can accumulate a lot of wasted space.
 
 
-Future plans
+## Future plans
 * Create a third executable, probably called "reprocess", which will re-do the OCR and exif tagging stages on existing files. This is useful as when OCR technology improves, we can redo the OCR on our pre-scanned archives to improve them without needing the originals.
 
 
-Development
+## Development
 
 If you want to help develop SDAT, even if it just to define more configs, please follow these procedures:
 
