@@ -26,7 +26,7 @@ New version 2 released, this has some new features, including configurable jobs 
 
 ## Overview:
 
-SDAT started off as a bash script sometime before 2006 to handle archival of my growing collection of documents/bills/invoices/etc... It was publicly released as Open Source around 2013 by explicit request, as it turned out there was no similar software available at the time and others didn't want to have to "reinvent the wheel". Since then I've kept using it for archiving my paperwork in a searchable way, while also making improvements as and when needed.
+SDAT started off as a bash script sometime before 2006 to handle archival of my growing collection of documents/bills/invoices/etc... It was publicly released as Open Source around 2013 by explicit request, as it turned out there was no similar software available at the time and other people didn't want to have to "reinvent the wheel". Since then I've kept using it for archiving my paperwork in a searchable way, while also making improvements as and when needed.
 
 The problem that I had with archiving documents is that I could either archive the scans as images (which are not text searchable) or as OCRed text, which is searchable but could contain OCR errors and you lose the formatting and style of the original document. What I wanted was the ability to do both, and from that came the idea of storing the OCR text in the metadata of the image.
 
@@ -83,7 +83,7 @@ When ADF is supported, SDAT will scan each page until the tray is empty. While d
 Each scanner is different so to support multiple scanners, including a computer with multiple scanners attached, the concept of "scanner definition" files were created. These allow you to pass a specific scanner configuration to SDAT, along with the scanner ID. I have included the definition files for my two scanners, but feel free to submit your own.
 The configuration looks like this:
 ```
-@EXTRAOPTS .= qw/--ald=no --df-action Stop --swdeskew=no --swcrop=no/;
+push @EXTRAOPTS, qw/--ald=no --df-action Stop --swdeskew=no --swcrop=no/;
 $DEVICE="fujitsu:ScanSnap S500:14658";
 $HAS_ADF=1;
 1; # This is always needed at the end
@@ -111,10 +111,10 @@ There are example configurations in the "config" directory, but a minimal config
 ```
 $SCAN_DPI=450;
 $OCR_ENABLED=1;
-$OUTFORMAT="pdf";
+$OUTFORMAT="pdf"; #"pdf" or "png" supported only
 $ADF_ENABLED=1;
-$ENABLE_DUPLEX=1;
-@EXTRAOPTS .= qw/--page-height 320 --page-width 211 -x 211 -y 320 --mode color/;
+$ENABLE_DUPLEX=1; # If your scanner supports it, automatically scan both sides
+push @EXTRAOPTS, qw/--page-height 320 --page-width 211 -x 211 -y 320 --mode color/;
 1; # This is always needed at the end
 
 ```
