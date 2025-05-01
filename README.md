@@ -62,10 +62,10 @@ The `$configuration_file` is a configuration file for your job. For more informa
 ```
 Will use my Fujistu ADF scanner to scan all the pages in the tray, following the "archive" configuration, which is a high quality archival PNG store, with OCR metadata. When done, the output should look like this:
 ```
-  /storage/backups/scanned_documents/2020/energy_bill_01
-  /storage/backups/scanned_documents/2020/energy_bill_02
-  /storage/backups/scanned_documents/2020/energy_bill_03
-  /storage/backups/scanned_documents/2020/energy_bill_04
+  /storage/backups/scanned_documents/2020/energy_bill_01.png
+  /storage/backups/scanned_documents/2020/energy_bill_02.png
+  /storage/backups/scanned_documents/2020/energy_bill_03.png
+  /storage/backups/scanned_documents/2020/energy_bill_04.png
 ```
 In this case, it is a two page document, double sided, so we end up with 4 numbered pages in total.
 
