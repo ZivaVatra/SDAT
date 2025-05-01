@@ -26,7 +26,7 @@ New version 2 released, this has some new features, including configurable jobs 
 
 ## Overview:
 
-SDAT started off as a bash script sometime before 2006 to handle archival of my growing collection of documents/bills/invoices/etc... It was publicly released as Open Source around 2013 by explicit request, as it turned out there was no similar software available at the time. Since then I've kept using it for archiving my paperwork in a searchable way, while also making improvements as and when needed.
+SDAT started off as a bash script sometime before 2006 to handle archival of my growing collection of documents/bills/invoices/etc... It was publicly released as Open Source around 2013 by explicit request, as it turned out there was no similar software available at the time and others didn't want to have to "reinvent the wheel". Since then I've kept using it for archiving my paperwork in a searchable way, while also making improvements as and when needed.
 
 The problem that I had with archiving documents is that I could either archive the scans as images (which are not text searchable) or as OCRed text, which is searchable but could contain OCR errors and you lose the formatting and style of the original document. What I wanted was the ability to do both, and from that came the idea of storing the OCR text in the metadata of the image.
 
