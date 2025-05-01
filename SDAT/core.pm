@@ -244,6 +244,8 @@ sub _writeExif {
 
 # Destructor
 sub DESTROY {
+	my $self = shift;
+	File::Path::rmtree($self->{tempDIR});
 }
 
 

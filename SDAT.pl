@@ -52,7 +52,8 @@ our $SCAN_DPI=0;
 # Extra options for scanimage, for specific scanners
 our $DEVICE;
 our @EXTRAOPTS;
-our $HAS_ADF;
+our $HAS_ADF = 0;
+our $ADF_ENABLED = 0;
 our $OUTFORMAT = "null";
 # Extra options for tesseract
 our @TESSOPTS=("-l", "eng");
