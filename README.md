@@ -26,9 +26,11 @@ New version 2 released, this has some new features, including configurable jobs 
 
 ## Overview:
 
-SDAT started off as a bash script sometime before 2006 to handle archival of Documents/Bills/Invoices/etc... It was publicly released as Open Source around 2013 by explicit request, as it turned out there was no similar software available at the time. Since then I've kept using it for archiving my paperwork in a searchable way, while also making improvements as and when needed.
+SDAT started off as a bash script sometime before 2006 to handle archival of my growing collection of documents/bills/invoices/etc... It was publicly released as Open Source around 2013 by explicit request, as it turned out there was no similar software available at the time. Since then I've kept using it for archiving my paperwork in a searchable way, while also making improvements as and when needed.
 
-The basic idea is of an automated system that scans the page, runs OCR on the text, and saves the text to the comment field in the metadata as an image. 
+The problem that I had with archiving documents is that I could either archive the scans as images (which are not text searchable) or as OCRed text, which is searchable but could contain OCR errors and you lose the formatting and style of the original document. What I wanted was the ability to do both, and from that came the idea of storing the OCR text in the metadata of the image.
+
+So that is what SDAT does. It is an automated system that scans pages, runs OCR on the text, and saves the text in the metadata of the image.
 
 This allows indexing engines (e.g. Desktop search) to know what text the document contains, allowing for easier searching, while keeping the original text+format as an image scan in case you ever need to reproduce a pixel-original copy.
 
@@ -53,7 +55,9 @@ Usage: ./SDAT.pl $configuration_file $scanner_file $target_folder $target_scan_f
 
 The `$scanner_file` is what holds your device ID, as well as any extra options you want to add to your scanner. Each scanner has variations in behviour and features, which can be defined here.
 
-The `$configuration_file` is a configuration file for your job. For more information for the kind of things you can define in your job, please see "Configuratinon" section for more details.
+The `$configuration_file` is a configuration file for your job. For more information for the kind of things you can define in your job.
+
+Please see "Configuratinon" section for more details of the above.
 
 `$output_folder` is the target where your files will be saved, while `$target_scan_filename` is the name of the file. If you only scan one file without ADF, this will just end up being `$target_scan_filename.png`. If you are using an ADF scanner with multiple scanned pages, then each scan will be separate file, with the format `$target_scan_filename_$02d`. For example, running:
 
@@ -68,15 +72,15 @@ Will use my Fujistu ADF scanner to scan all the pages in the tray, following the
   /storage/backups/scanned_documents/2020/energy_bill_04.png
 ```
 In this case, it is a two page document, double sided, so we end up with 4 numbered pages in total. 
-If however you select to have PDF output, then single and multi-page is treated the same, and you get a single `$target_scan_filename.pdf` in your output directory.
+If however you select to have PDF output, then single and multi-page is treated the same, and you get a single `$target_scan_filename.pdf` in your output directory with all the pages within it (and all the OCRed text from the pages concatenated in the metadata).
 
-When ADF is supported, SDAT will scan each page until the tray is empty. While doing this, in the background it will start the process of OCR and conversion. Once the scanning is done, the executable will wait until all processing child process are done.
+When ADF is supported, SDAT will scan each page until the tray is empty. While doing this, in the background it will start the process of OCR and conversion. Once the scanning is done, the executable will wait until all processing child process are done before the final write to the output directory.
 
 ## Configuration
 
 ### Scanner configuration file ##
 
-Each scanner is different so to support multiple scanners, including a computer with multiple scanners attached, the concept of "scanner definion" files were created. This allows you to pass specific scanner configuration to SDAT, along with the scanner ID. I have included the definition files for my two scanners, but feel free to submit your own.
+Each scanner is different so to support multiple scanners, including a computer with multiple scanners attached, the concept of "scanner definition" files were created. These allow you to pass a specific scanner configuration to SDAT, along with the scanner ID. I have included the definition files for my two scanners, but feel free to submit your own.
 The configuration looks like this:
 ```
 @EXTRAOPTS .= qw/--ald=no --df-action Stop --swdeskew=no --swcrop=no/;
@@ -97,11 +101,11 @@ Detected devices:
 
 In this case only my Epson is powered on, the "epkowa" line would be placed in $DEVICE. 
 
-$HAS_ADF is the final option, and it defines whether the specific scanner supports "ADF" (Auto document feeding). This is when you stick a stack of papers in a tray and it scans them all automatically. Depending on whether this is set or not, different logic paths in SDAT will be executed.
+$HAS_ADF is the final option, and it defines whether this specific scanner supports "ADF" (Auto document feeding). This is when you stick a stack of papers in a tray and it scans them all automatically. 
 
 ### Job configuration file ##
 
-The job configuration file allows you to define certain scan jobs, if you have more than one type of scan job. For example, I have two types of job scans. My "Archive", which is for long term high quality storage of OCR'ed files, usually for documents that I have since shredded, but may need a copy in future.
+The job configuration file allows you to define certain scan jobs, if you have more than one type of scan job. For example, I have two types of job scans. My "Archive", which is for long term high quality storage of OCR'ed files, usually for documents that I have since shredded but may need a copy in future.
 
 There are example configurations in the "config" directory, but a minimal configuration would look like this:
 ```
@@ -115,13 +119,13 @@ $ENABLE_DUPLEX=1;
 
 ```
 
-I set 450 DPI as the scan size, as I find this is a good balance between file size, scanning speed, quality of OCR accuracy while being able to look similar to the original in print quality if there is a need to print it out.
+Most of the above is pretty self explanatory. I set 450 DPI as the scan size as I find this is a good balance between file size, scanning speed, quality of OCR accuracy while being able to look similar to the original in print quality if there is a need to print it out.
 
-In this case we use `EXTRAOPTS` to specify the paper size and whether we want colour scanning. These options are added to the ones in the scanner configuration file. As I discovered that different scanners default to different things (e.g. colour/grayscale/black and white) I made this definition explicit.
+In this case we use `EXTRAOPTS` to specify the paper size and whether we want colour scanning. These options are added to the ones in the scanner configuration file.
 
 #### Extra option: callback_last
 
-As each job configuration file is in fact valid Perl code, this gives us a lot of flexibility. One thing I added is the "callback_last" option. If you define this subroutine in your config file, it will allow you to manipulate the scanned files and OCR text before they are merged to PDF (or EXIF tagged for Images) and sent to their destination.
+As each job configuration file is in fact valid Perl code, this gives us a lot of flexibility. One thing I added is the "callback_last" option. If you define this subroutine in your config file, it will be executed just before the scanned images and OCRed text are merged to PDF (or EXIF tagged for Images) and sent to their destination.
 
 Here is a simple example with comments:
 ```
@@ -144,7 +148,7 @@ sub callback_last {
 
 ```
 
-The example above just prints hello world, but as noted in the comments, you have access to the temporary directory, the final destination folder and the name as defined when you called the function. The file structure shows you how the layout looks, each page is suffixed 01/02/03/etc... There really is no limit to what you can do here, whatever is possible in Perl on your machine can be written here.
+The example above just prints "hello world" but as noted in the comments, you have access to the temporary directory, the final destination folder and the name as defined when you called the function. The file structure shows you how the layout looks, each page is suffixed 01/02/03/etc... There really is no limit to what you can do here, whatever is possible in Perl on your machine can be written here.
 
 
 ## Known methods of searching
