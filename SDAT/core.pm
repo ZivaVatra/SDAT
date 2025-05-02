@@ -44,7 +44,7 @@ package SDAT::core;
 #	"resolution" (integer)
 #	"outDIR" (string)
 #	"filePattern" (string)
-#	"scanOpts" (list)
+#	"scanOpts" (string)
 #	"device" (string)
 #	"tessOpts" (list)
 #	"OCR" (bool)
@@ -87,14 +87,14 @@ sub _checkDeps {
 sub scan {
 	my $self = shift;
 	if ($self->{enableADF} == 1) {
-		push(@{$self->{scanOpts}}, "--source", "ADF Duplex");
+		$self->{scanOpts} .= " --source ADF Duplex ";
 	}
 
 	die("Failed to scan, got error: $!\n") if system(
 		"scanimage", "-v", "-p", "--format=png",
 		"-d", $self->{device},
 		"--resolution", $self->{resolution}
-		, @{$self->{scanOpts}},
+		, $self->{scanOpts},
 		"--batch=$self->{tempDIR}/$self->{filePattern}_%02d.png"
 	);
 } 

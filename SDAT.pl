@@ -51,7 +51,7 @@ use File::Basename "fileparse";
 our $SCAN_DPI=0;
 # Extra options for scanimage, for specific scanners
 our $DEVICE;
-our @EXTRAOPTS;
+our $EXTRAOPTS;
 our $HAS_ADF = 0;
 our $ADF_ENABLED = 0;
 our $OUTFORMAT = "null";
@@ -110,7 +110,7 @@ my $scanCore = SDAT::core->new({
 	"resolution" => $SCAN_DPI,
 	"outDIR" => $FINALDST,
 	"filePattern" => $NAME,
-	"scanOpts" => \@EXTRAOPTS,
+	"scanOpts" => $EXTRAOPTS,
 	"device" => $DEVICE,
 	"tessOpts" => \@TESSOPTS,
 	"OCR" => $OCR_ENABLED,

@@ -1,6 +1,6 @@
 # vim: syntax=perl
 # Extra options for scanimage, for specific scanners
-push @EXTRAOPTS, qw/ --ald=no --df-action Stop --swdeskew=no --swcrop=no --page-height 320 --page-width 211/;
+$EXTRAOPTS .= q/ --ald=no --df-action Stop --swdeskew=no --swcrop=no --page-height 320 --page-width 211/;
 $DEVICE="fujitsu:ScanSnap S500:14658";
 $HAS_ADF=1;
 1; # This is always needed at the end
