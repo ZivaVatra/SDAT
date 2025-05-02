@@ -137,7 +137,7 @@ while(1) {
 	sleep(1);
 
 	# Loop through images, for each one do the OCR, and move to dest
-	my @outfiles = glob("$scanCore->{tmpDIR}/$scanCore->{filePattern}*.tiff");
+	my @outfiles = glob("$scanCore->{tmpDIR}/$scanCore->{filePattern}*.png");
 	# As long as the scanning pid is not dead, reset
 	# counter
 	if (waitpid($pid, WNOHANG) != -1) {

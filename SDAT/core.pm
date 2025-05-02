@@ -154,7 +154,7 @@ sub mergePDF {
 			open(FD, $textFile);
 			while(<FD>){
 				chomp;
-				$text .= $_;
+				$text .= "$_ ";
 			}
 			close(FD);
 		}
@@ -177,6 +177,8 @@ sub mergePDF {
 		"-define", q~pdf:Author="SDAT - https://github.com/ZivaVatra/SDAT"~,
 		"-define", qq/pdf:Title="$self->{filePattern}"/,
 		"-define", qq/pdf:Keywords="$text"/,
+		"-compress", "lossless",
+		"-density", $self->{resolution},
 		"$self->{outDIR}/$self->{filePattern}.pdf");
 
 	# From what I can see, PDF does not have the ability to set a comment field,
