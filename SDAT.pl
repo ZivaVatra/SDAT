@@ -165,8 +165,8 @@ if (defined(&callback_last)) {
 # When all processing is complete, we write out our PNGs or PDFs
 $scanCore->writeFormatBatch() or die("Could not write output!");
 
+$scanCore->deleteTempDir();
+
 sub process {
 	my $inFile = shift;
 }
-# When all is done, remove tmp folder
-#exe("rm -rv $TPATH/scan.$RANDSTR");

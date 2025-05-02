@@ -185,10 +185,10 @@ sub mergePDF {
 	my $pdfData;
 	open(FD, "$self->{outDIR}/$self->{filePattern}.pdf") or die("Failed to open PDF for read: $!");
 	$pdfData = <FD>; # First line is our PDF definition
-	$pdfData .= "%$text\n"; # We add our text as a PDF comment
 	while(<FD>) {
 		$pdfData .= $_; #Load the rest as is
 	};
+	$pdfData .= "%$text\n"; # We add our text as a single line PDF comment after EOF
 	close(FD);
 	# Now write the data back
 	open(FD, ">$self->{outDIR}/$self->{filePattern}.pdf") or die("Failed to open PDF for write: $!");
@@ -242,10 +242,16 @@ sub _writeExif {
 	);
 }
 
-# Destructor
-sub DESTROY {
+sub deleteTempDir {
 	my $self = shift;
 	File::Path::rmtree($self->{tempDIR});
+}
+
+# Destructor
+sub DESTROY {
+	# N.B. We cannot delete the temp directory here because when we fork and
+	# and the children end, the destructor is called and it deletes the tempDIR
+	# before the rest of the program has finished executing, breaking everything.
 }
 
 
