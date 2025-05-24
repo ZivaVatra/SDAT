@@ -4,7 +4,6 @@
 
 ### May 2025
  Version3 in development, changes:
-* Replaced multiprocessing with Forks::Super
 * Code refactoring into newer Perl design, utilising Classes and strict mode.
 * General cleanup of logic
 * Restricted output to two modes: PNG or PDF, with tagging for each
@@ -41,7 +40,6 @@ Requirements:
 * sane-tools
 * Exiv2 image metadata library
 * imageMagick tools
-* Forks::Super CPAN module
 * Data::GUID CPAN module
 
 ## Usage:
