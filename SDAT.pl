@@ -136,18 +136,11 @@ my $counter = 3;
 while(1) {
 	sleep(1);
 
-	# Loop through images, for each one do the OCR, and move to dest
-	my @outfiles = glob("$scanCore->{tmpDIR}/$scanCore->{filePattern}*.png");
 	# As long as the scanning pid is not dead, reset
 	# counter
 	if (waitpid($pid, WNOHANG) != -1) {
 		$counter = 3;
 	}
-	if(@outfiles) {
-		Forks::Super::pmap { $scanCore->OCR($_) } {timeout => 120}, @outfiles;
-	}
-	
-	print("Waiting for processing pid\n");
 
 	if ($counter-- <= 0) {
 		print(" Finished!\n");
@@ -155,7 +148,6 @@ while(1) {
 		# and dead scanning PID, quit loop
 		last;
 	}
-	Forks::Super::waitall(); # We wait for any children to finish their processing
 }
 # Finally, we check to see if callback_last function is defined. If it is, we execute
 if (defined(&callback_last)) {

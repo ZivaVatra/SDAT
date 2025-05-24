@@ -104,16 +104,16 @@ sub writeFormatBatch {
 	my @files = glob("$self->{tempDIR}/$self->{filePattern}*.png");
 
 	if ($self->{OCR} == 1) {
-		Forks::Super::pmap { $self->OCR($_) } {timeout => 120}, @files;
+		Forks::Super::pmap { $self->OCR($_) }, @files;
+		Forks::Super::waitall();
 	}
-	Forks::Super::waitall();
 
 	if ($self->{outFormat} =~ m/PDF/i) {
 		return $self->mergePDF(\@files);
 	} else {
 		Forks::Super::pmap { 
 			$self->_writeExif($_);
-		} {timeout => 120}, @files;
+		}, @files;
 		Forks::Super::waitall();
 		foreach(@files) {
 			my $outName = $_;
