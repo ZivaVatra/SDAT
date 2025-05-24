@@ -23,7 +23,7 @@
 #
 #You should have received a copy of the GNU General Public License
 #along with this program; if not, write to the Free Software
-#Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA	02110-1301, USA.
 #
 #
 # This is a script for archival of Documents/Bills/Invoices/etc...
@@ -124,8 +124,8 @@ $TEMPDIR = $scanCore->{tempDIR};
 
 # 1. Scan the images to a temporary folder
 # As this can take a while, we fork
-my $pid = fork();
-if ($pid == 0) {
+my $scanPid = fork();
+if ($scanPid == 0) {
 	$scanCore->scan();
 	exit;
 }
@@ -133,6 +133,7 @@ if ($pid == 0) {
 #While the above is scanning, we sit and wait for files to be created,
 # Then process them as they arrive
 my $counter = 3;
+my @pids; # Where we keep track of all the OCR pids we launched
 while(1) {
 	sleep(1);
 
@@ -140,11 +141,20 @@ while(1) {
 	my @outfiles = glob("$scanCore->{tmpDIR}/$scanCore->{filePattern}*.png");
 	# As long as the scanning pid is not dead, reset
 	# counter
-	if (waitpid($pid, WNOHANG) != -1) {
+	if (waitpid($scanPid, WNOHANG) != -1) {
 		$counter = 3;
 	}
 	if(@outfiles) {
-		Forks::Super::pmap { $scanCore->OCR($_) } {timeout => 120}, @outfiles;
+		foreach(@outfiles) {
+			s/\n//g;
+			print("Processing image $_\n");
+			my $pid = fork();
+			if ($pid == 0) {
+					exit($scanCore->OCR($_));
+			} else {
+					push(@pids, $pid);
+			}
+		}
 	}
 	
 	print("Waiting for processing pid\n");
@@ -152,11 +162,11 @@ while(1) {
 	if ($counter-- <= 0) {
 		print(" Finished!\n");
 		# We have reached end of countdown with no files
-		# and dead scanning PID, quit loop
+		# and dead scanning PID. We quit loop
 		last;
 	}
-	Forks::Super::waitall(); # We wait for any children to finish their processing
 }
+wait();
 # Finally, we check to see if callback_last function is defined. If it is, we execute
 if (defined(&callback_last)) {
 	callback_last();
