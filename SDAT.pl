@@ -157,8 +157,6 @@ while(1) {
 		}
 	}
 	
-	print("Waiting for processing pid\n");
-
 	if ($counter-- <= 0) {
 		print(" Finished!\n");
 		# We have reached end of countdown with no files
@@ -166,7 +164,9 @@ while(1) {
 		last;
 	}
 }
-wait();
+print "Scanning done, waiting for OCR children to finish\n";
+# Wait for all scanning pids to finish
+foreach(@pids) { waitpid($_, WNOHANG) }
 # Finally, we check to see if callback_last function is defined. If it is, we execute
 if (defined(&callback_last)) {
 	callback_last();

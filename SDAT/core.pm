@@ -32,11 +32,10 @@
 
 ### BEGIN Class ###
 use strict;
-use Forks::Super;
-$Forks::Super::ON_BUSY = 'block';
 use Data::GUID;
 use File::Path qw(make_path rmtree);
 use File::Copy qw(move);
+use Forks::Super;
 package SDAT::core;
 
 # Constructor options
@@ -103,8 +102,15 @@ sub writeFormatBatch {
 	my $self = shift;
 	my @files = glob("$self->{tempDIR}/$self->{filePattern}*.png");
 
+	my @OCRpids;
 	if ($self->{OCR} == 1) {
-		Forks::Super::pmap { $self->OCR($_) } {timeout => 120}, @files;
+		foreach(@files) {
+			my $pid = fork();
+			if ($pid == 0) {
+				exit($self->OCR($_));
+			} else {
+				push(@OCRpids, $pid);
+			}
 	}
 	Forks::Super::waitall();
 
@@ -113,7 +119,7 @@ sub writeFormatBatch {
 	} else {
 		Forks::Super::pmap { 
 			$self->_writeExif($_);
-		} {timeout => 120}, @files;
+		}, @files;
 		Forks::Super::waitall();
 		foreach(@files) {
 			my $outName = $_;
