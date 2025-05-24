@@ -117,6 +117,7 @@ my $scanCore = SDAT::core->new({
 	"enableADF" => $ADF_ENABLED,
 	"duplex" => $ENABLE_DUPLEX,
 	"outFormat" => $OUTFORMAT,
+	"debug" => 0
 	});
 
 # Assigned so that it is available to callback_last;
@@ -133,26 +134,25 @@ if ($scanPid == 0) {
 #While the above is scanning, we sit and wait for files to be created,
 # Then process them as they arrive
 my $counter = 3;
-my @pids; # Where we keep track of all the OCR pids we launched
+my @OCRpids; # Where we keep track of all the OCR pids we launched
 while(1) {
-	sleep(1);
+	sleep(2);
 
-	# Loop through images, for each one do the OCR, and move to dest
-	my @outfiles = glob("$scanCore->{tmpDIR}/$scanCore->{filePattern}*.png");
 	# As long as the scanning pid is not dead, reset
 	# counter
 	if (waitpid($scanPid, WNOHANG) != -1) {
 		$counter = 3;
 	}
-	if(@outfiles) {
+	if($scanCore->{OCR} == 1) {
+		# Loop through images, for each one do the OCR, and move to dest
+		my @outfiles = glob("$scanCore->{tempDIR}/$scanCore->{filePattern}*.png");
 		foreach(@outfiles) {
 			s/\n//g;
-			print("Processing image $_\n");
 			my $pid = fork();
 			if ($pid == 0) {
 					exit($scanCore->OCR($_));
 			} else {
-					push(@pids, $pid);
+					push(@OCRpids, $pid);
 			}
 		}
 	}
@@ -166,7 +166,7 @@ while(1) {
 }
 print "Scanning done, waiting for OCR children to finish\n";
 # Wait for all scanning pids to finish
-foreach(@pids) { waitpid($_, WNOHANG) }
+foreach(@OCRpids) { waitpid($_, 0); }
 # Finally, we check to see if callback_last function is defined. If it is, we execute
 if (defined(&callback_last)) {
 	callback_last();
