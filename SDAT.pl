@@ -23,7 +23,7 @@
 #
 #You should have received a copy of the GNU General Public License
 #along with this program; if not, write to the Free Software
-#Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+#Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA	02110-1301, USA.
 #
 #
 # This is a script for archival of Documents/Bills/Invoices/etc...
@@ -117,6 +117,7 @@ my $scanCore = SDAT::core->new({
 	"enableADF" => $ADF_ENABLED,
 	"duplex" => $ENABLE_DUPLEX,
 	"outFormat" => $OUTFORMAT,
+	"debug" => 0
 	});
 
 # Assigned so that it is available to callback_last;
@@ -124,8 +125,8 @@ $TEMPDIR = $scanCore->{tempDIR};
 
 # 1. Scan the images to a temporary folder
 # As this can take a while, we fork
-my $pid = fork();
-if ($pid == 0) {
+my $scanPid = fork();
+if ($scanPid == 0) {
 	$scanCore->scan();
 	exit;
 }
@@ -133,22 +134,39 @@ if ($pid == 0) {
 #While the above is scanning, we sit and wait for files to be created,
 # Then process them as they arrive
 my $counter = 3;
+my @OCRpids; # Where we keep track of all the OCR pids we launched
 while(1) {
-	sleep(1);
+	sleep(2);
 
 	# As long as the scanning pid is not dead, reset
 	# counter
-	if (waitpid($pid, WNOHANG) != -1) {
+	if (waitpid($scanPid, WNOHANG) != -1) {
 		$counter = 3;
 	}
-
+	if($scanCore->{OCR} == 1) {
+		# Loop through images, for each one do the OCR, and move to dest
+		my @outfiles = glob("$scanCore->{tempDIR}/$scanCore->{filePattern}*.png");
+		foreach(@outfiles) {
+			s/\n//g;
+			my $pid = fork();
+			if ($pid == 0) {
+					exit($scanCore->OCR($_));
+			} else {
+					push(@OCRpids, $pid);
+			}
+		}
+	}
+	
 	if ($counter-- <= 0) {
 		print(" Finished!\n");
 		# We have reached end of countdown with no files
-		# and dead scanning PID, quit loop
+		# and dead scanning PID. We quit loop
 		last;
 	}
 }
+print "Scanning done, waiting for OCR children to finish\n";
+# Wait for all scanning pids to finish
+foreach(@OCRpids) { waitpid($_, 0); }
 # Finally, we check to see if callback_last function is defined. If it is, we execute
 if (defined(&callback_last)) {
 	callback_last();
