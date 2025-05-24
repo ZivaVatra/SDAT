@@ -27,9 +27,9 @@ New version 2 released, this has some new features, including configurable jobs 
 
 SDAT started off as a bash script sometime before 2006 to handle archival of my growing collection of documents/bills/invoices/etc... It was publicly released as Open Source around 2013 by explicit request, as it turned out there was no similar software available at the time and other people didn't want to have to "reinvent the wheel". Since then I've kept using it for archiving my paperwork in a searchable way, while also making improvements as and when needed.
 
-The problem that I had with archiving documents is that I could either archive the scans as images (which are not text searchable) or as OCRed text, which is searchable but could contain OCR errors and you lose the formatting and style of the original document. What I wanted was the ability to do both, and from that came the idea of storing the OCR text in the metadata of the image.
+The problem that I had with archiving documents is that I could either archive the scans as images (which are not text searchable) or as OCRed text, which is searchable but could contain OCR errors and you lose the formatting and style of the original document. What I wanted was the ability to do both, and from that came the idea of storing the OCR text in the container metadata (either PNG image or PDF).
 
-So that is what SDAT does. It is an automated system that scans pages, runs OCR on the text, and saves the text in the metadata of the image.
+So that is what SDAT does. It is an automated system that scans pages, runs OCR on the text, and saves the text in the metadata of the container.
 
 This allows indexing engines (e.g. Desktop search) to know what text the document contains, allowing for easier searching, while keeping the original text+format as an image scan in case you ever need to reproduce a pixel-original copy.
 
@@ -89,7 +89,7 @@ $HAS_ADF=1;
 
 `EXTRAOPTS` are options understood by the `scanimage` command, and any options can be passed. In this case we disabled SW deskew and cropping in the driver, and made the default action in case of error for the scanner to stop. "ald" is page "leading edge" detection, which I felt was not needed as we want a full scan, even if we overscan a bit, rather than risk cutting off bits of the document.
 
-the $DEVICE variable is the ID used by SANE to know which scanner to use. You can find out what your scanner(s) are by running `listDevices`, like so:
+The $DEVICE variable is the ID used by SANE to know which scanner to use. You can find out what your scanner(s) are by running `listDevices`, like so:
 
 ```
 ~ $./listDevices
@@ -103,15 +103,15 @@ $HAS_ADF is the final option, and it defines whether this specific scanner suppo
 
 ### Job configuration file ##
 
-The job configuration file allows you to define certain scan jobs, if you have more than one type of scan job. For example, I have two types of job scans. My "Archive", which is for long term high quality storage of OCRed files, usually for documents that I have since shredded but may need a copy in future.
+The job configuration file allows you to define certain scan jobs, if you have more than one type of scan job. For example, I have two types of job scans. My "Archive", which is for long term high quality storage of OCRed files, usually for documents that I have since shredded but may need a copy in future and my "Email" config, which uses a low resolution (and greyscale) scanning with no OCR for the smallest output suitable for attachment to e-mails.
 
 There are example configurations in the "config" directory, but a minimal configuration would look like this:
 ```
 $SCAN_DPI=450;
-$OCR_ENABLED=1;
+$OCR_ENABLED=1; # If you want to OCR the text and store it in the metadata
 $OUTFORMAT="pdf"; #"pdf" or "png" supported only
 $ADF_ENABLED=1;
-$ENABLE_DUPLEX=1; # If your scanner supports it, automatically scan both sides
+$ENABLE_DUPLEX=1; # If your scanner supports it, automatically scan both sides, ADF scanners usually do
 push @EXTRAOPTS, qw/--page-height 320 --page-width 211 -x 211 -y 320 --mode color/;
 1; # This is always needed at the end
 
@@ -154,7 +154,7 @@ The example above just prints "hello world" but as noted in the comments, you ha
 1. "grep" (the one I use most often). A simple "grep -ir $search_term $scan_dir" works well enough to narrow down which scanned documents I am interested in
 2. GNOME used to have a desktop search tool called "Beagle" (http://beagle-project.org/) which would search image EXIF data. This was the original inspiration for writing this tool, as the ability to just type in text and get scanned images back really helped with archival. Indeed Beagle is what I used to originally use with SDAT. However it seems to be dead (last release was 2006), which I guess dates both me and this script quite a bit XD
 
-There is an entire article on wikipedia about it (https://en.wikipedia.org/wiki/Desktop_search) however i have not used anything apart from the above. I don't know what software supports indexing EXIF comments on images. If you have successfully used another piece of software, feel free to let me know and I can post it here :-) 
+There is an entire article on Wikipedia about it (https://en.wikipedia.org/wiki/Desktop_search) however i have not used anything apart from the above. I don't know what software supports indexing EXIF comments on images. If you have successfully used another piece of software, feel free to let me know and I can post it here :-) 
 
 ## Gotchas
 
@@ -162,9 +162,9 @@ Here are some gotchas I have come across when using this system:
 
 * Don't invert the text half way through the scan. This is not a problem with SDAT as such, but the underlying OCR software. Generally this isn't a problem if you are scanning a single document. However if you are scanning lots of little receipts as part of an expenses document you can put one upside down. I did this once and while nothing broke, tesseract did sit there and consume 100% CPU trying to decode the upside-down text until I got sick of waiting, killed it and then re-scanned with the receipt the right way up.
 
-* Make sure you have enough space in "/tmp". This software makes use of /tmp to store both the final copy and any intermediate stages. On a 600dpi scan this means you could use a good 500MB of data in temp files. If you run out of space half way through a scan it can get messy (you get errors that indicate failure, but not that the reason may be lack of free space). 
+* Make sure you have enough space in "/tmp". This software makes use of /tmp to store both the final copy and any intermediate stages. On a 600dpi scan this means you could use a good 500MB of data in temp files. If you run out of space half way through a scan it can get messy (you get errors that indicate failure, but not necessarily that the reason may be lack of free space). 
 
-* Leading from above, the software will delete its temporarily files from /tmp in the case of a successful scan and OCR. However if you cancel the program, or something raises an error, it does not delete the tmpfiles (this is useful for debugging). As such be aware you may have leftover data files using up space in /tmp that you may want to clear out. For many distros tmps is a ramdisk (tmpfs) so should be cleared on reboot, but for those where it isn't, you can accumulate a lot of wasted space.
+* Leading from above, the software will delete its temporarily files from /tmp/SDAT in the case of a successful scan and OCR. However if you cancel the program, or something raises an error, it does not delete the tmpfiles (this is useful for debugging). As such be aware you may have leftover data files using up space in /tmp/SDAT that you may want to clear out. For many distros tmps is a ramdisk (tmpfs) so should be cleared on reboot, but for those where it isn't, you can accumulate a lot of wasted space.
 
 
 ## Future plans
