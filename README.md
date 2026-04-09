@@ -2,7 +2,7 @@
 
 ## News:
 
-### May 2025
+### April 2026
  Version3 in development, changes:
 * Code refactoring into newer Perl design, utilising Classes and strict mode.
 * General cleanup of logic
@@ -10,6 +10,7 @@
 	* The text is added as an Exif comment on PNGs
 	* The text is added using the "keywords" field on PDFs, it is also added as a comment in the PDF source code as an extra (this is valid according to what I've read about the PDF standard).
 * Updates to the configuration files to work with the new logic.
+* Work on implementing alternative OCR software (ML powered OCR using Ollama RPC)
 
 
 ### April 2025

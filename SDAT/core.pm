@@ -32,6 +32,8 @@
 
 ### BEGIN Class ###
 use strict;
+use Forks::Super;
+$Forks::Super::ON_BUSY = 'block';
 use Data::GUID;
 use File::Path qw(make_path rmtree);
 use File::Copy qw(move);
@@ -45,11 +47,11 @@ package SDAT::core;
 #	"scanOpts" (list)
 #	"device" (string)
 #	"tessOpts" (list)
+#	"OCRtype" (string)
 #	"OCR" (bool)
 #	"enableADF" (bool:0)
 #	"duplex" (bool:1) //this only applies if there is an Auto document feeder
 #	"outFormat" (string:[png/pdf]) // we now limit to only these two
-#	"debug" (bool:0) // print debug statements
 
 sub new {
 	_checkDeps();
@@ -102,11 +104,19 @@ sub writeFormatBatch {
 	my $self = shift;
 	my @files = glob("$self->{tempDIR}/$self->{filePattern}*.png");
 
+	if ($self->{OCR} == 1) {
+		Forks::Super::pmap { $self->OCR($_) } {timeout => 120}, @files;
+	}
+	Forks::Super::waitall();
+
 	if ($self->{outFormat} =~ m/PDF/i) {
 		return $self->mergePDF(\@files);
 	} else {
-		foreach(@files) {
+		Forks::Super::pmap { 
 			$self->_writeExif($_);
+		} {timeout => 120}, @files;
+		Forks::Super::waitall();
+		foreach(@files) {
 			my $outName = $_;
 			$outName =~ s/$self->{tempDIR}//g;
 			print "move $_ to $self->{outDIR}/$outName\n";
@@ -139,7 +149,7 @@ sub mergePDF {
 	my $files = shift;
 	if ($self->{OCR} == 1) {
 		foreach my $file (@{$files}) {
-			print "mergePDF: $file\n" if $self->{debug};
+			print "mergePDF: $file\n";
 			my $textFile = "$file.txt";
 			warn("Unable to find OCR text for '$file'! Cannot add to PDF.") unless (-f $textFile);
 			open(FD, $textFile);
@@ -159,7 +169,7 @@ sub mergePDF {
 	}
 
 	foreach(@{$files}) {
-		print "merging file: $_\n" if $self->{debug};
+		print "merging file: $_\n";
 	}
 	die("Failed to create PDF: $!") if system(
 		"magick", 
@@ -191,6 +201,17 @@ sub mergePDF {
 }
 
 sub OCR {
+	my $self = shift;
+    my $inputImage = shift;
+
+	if ($self->{OCRtype} == "tesseract") {
+		$self->tessOCR($inputImage);
+	} elsif ($self->{OCRtype} == "ollama") {
+		warn("Ollama NOT IMPLEMENTED YET\n")
+	}
+}
+
+sub tessOCR {
 	my $self = shift;
     my $inputImage = shift;
 	# If the output file already exists, do nothing
