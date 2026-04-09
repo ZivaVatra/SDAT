@@ -22,7 +22,7 @@
 #
 #You should have received a copy of the GNU General Public License
 #along with this program; if not, write to the Free Software
-#Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA	02110-1301, USA.    #
+#Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA	02110-1301, USA.	#
 # All rights reserved
 # ============================================================================|
 #
@@ -86,6 +86,60 @@ sub _checkDeps {
 	}
 }
 
+sub unpackPDF {
+	""" This subroutine unpacks a PDF file into images following the internal
+	directory structure, so we can OCR it. Used primarily for reprocessing
+	existing scans """
+	my $self = shift;
+	my $pdfFile = shift;
+	
+	my $im = Image::Magick->new();
+	
+	# Read the entire PDF to get its properties
+	my $error = $im->Read($pdfFile);
+	if ($error) {
+		die "Error reading PDF file: $error\n";
+	}
+	# Get the original PDF density/resolution, or fallback to 300dpi
+	# and we set it for extraction
+	my $density = $im->Get('density');
+	$density = '300' if !$density; 
+	$im->Set(density => $density);
+	
+	my $page_count = $im->Get('pages');
+	$page_count = 1 if !$page_count; # it is a single page pdf
+
+	# Process each page
+	for my $page_num (1..$page_count) {
+		# Create a copy of the image for this page matching
+		# the PDF original density
+		my $page_image = Image::Magick->new();
+		$page_image->Set(density => $density);
+		
+		# Set the page to extract (0-indexed)
+		$page_image->Set(page => $page_num - 1);
+		
+		my $error = $page_image->Read($pdfFile);
+		if ($error) {
+			warn "Error reading page $page_num: $error";
+			next;
+		}
+		my $filename = sprintf("%s/%s_%02d.png", 
+							  $self->{tempDIR}, 
+							  $self->{filePattern}, 
+							  $page_num);
+		
+		my $write_error = $page_image->Write(filename => $filename);
+		if ($write_error) {
+			warn "Error writing image $filename: $write_error";
+		}
+		$page_image->Destroy();
+	}
+	# Final cleanup
+	$image->Destroy();
+	
+	return 1;  # Success
+}
 sub scan {
 	my $self = shift;
 	if ($self->{enableADF} == 1) {
@@ -139,7 +193,7 @@ sub writeFormatBatch {
 i
 
 
-su mergePDF {
+sub mergePDF {
 	# Unlike images, where each image has its OCR'd text in its EXIF header, PDFs are multipage
 	# and we can't set a comment per page, so what we have to do is load up all the OCR text files
 	# for each page, concatenate them and set the entire thing as a comment. I guess I will find out
@@ -202,39 +256,28 @@ su mergePDF {
 }
 
 sub OCR {
+	""" This will OCR a given image file, and return the text. Only image files supported """
 	my $self = shift;
 	my $inputImage = shift;
+	my $text = "";
 
 	if ($self->{OCRtype} == "tesseract") {
-		$self->tessOCR($inputImage);
+		use SDAT::tessOCR;
+		my $inst = SDAT::tessOCR->new({
+			tessOpts => $self->{tessOpts}
+		});
+		return $inst->tessOCR($inputImage);
 	} elsif ($self->{OCRtype} == "ollama") {
 		die("Please set ollamaENDPOINT environment variable!\n") unless ($ENV{ollamaENDPOINT});
 		use SDAT::ollamaOCR;
 		$inst = SDAT::ollamaOCR->new({
 			endpoint => $ENV{ollamaENDPOINT}
 		});
-		$text = $inst->OCR($inputImage);
-		# This is for compatibility with existing tesseract logic
-		write_file("$inputImage.txt", $text);
+		return $inst->OCR($inputImage);
 
 	} else {
 		die("OCR type '$self->{OCRtype}' not recognised.\n");
 	}
-}
-
-sub tessOCR {
-	my $self = shift;
-    my $inputImage = shift;
-	# If the output file already exists, do nothing
-	# Tesseract "helpfully" appends .txt to our files
-	# hence the addition
-	return if (-e "$inputImage.txt");
-    die("OCR failed: $!\n") if system(
-		"tesseract",
-		$inputImage,
-		$inputImage, # tesseract auto-appends .txt
-		@{$self->{tessOpts}}
-	);
 }
 
 sub _writeExif {
@@ -276,5 +319,5 @@ sub DESTROY {
 
 
 
-1;  # End of file
+1;	# End of file
 
