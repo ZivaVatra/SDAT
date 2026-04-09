@@ -3,10 +3,24 @@
 ## News:
 
 ### April 2026
- Version4 in development, changes:
-* re-writing OCR logic to split it from scanning logic
+ Version 4 in development, changes:
+* re-writing OCR logic to split it from scanning logic.
 * Work on implementing alternative OCR software (ML powered OCR using Ollama RPC)
 * Code refactoring
+
+Currently version 4 supports both the original tesseract OCR as well as using ollama RPC calls to a OCR machine learning model (I am using glm-ocr). So now you can choose between using tesserect or a ollama support ML model.
+
+As far as tesserect vs glm-ocr, glm-ocr is much better at correctly recognising text. Not only does it capture more text than tesserect does, that which it captures is more correct. I hardly notice any mistakes in the OCR'd text vs the original.
+
+However glm-ocr is much slower, more resource hungry (needs a beefy GPU and CPU, plus lots of RAM) and in some cases can be counter productive. During one test it could not OCR the text, so instead it decided to pontificate on whether the page I was scanning (an instruction manual) was in fact the cover of a Jane Austin novel or not. I made some tweaks to the prompt to get the model to just respond with "Cannot OCR Text" if it can't OCR the text, but still need to see if that does the trick reliably.
+
+Tesseract however will either OCR the text (to varying accuracy), or give up and return nothing.
+
+
+#### Current status
+At the moment only the "reprocess.pl" script is working, and it has been tested with both OCR methods on updating the comments in PDF and PNG files. The rest of SDAT has not been tested yet, so version4 is still in development and not recommended for use unless you want to experiment and contribute.
+
+
 
 ### May 2025
 * Code refactoring into newer Perl design, utilising Classes and strict mode.

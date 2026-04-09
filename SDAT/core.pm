@@ -94,35 +94,63 @@ sub unpackPDF {
 	
 	my $im = Image::Magick->new();
 	
+	$im->Set('define:pdf:use-cropbox=true');
 	# Read the entire PDF to get its properties
 	my $error = $im->Read($pdfFile);
 	if ($error) {
 		die "Error reading PDF file: $error\n";
 	}
 	# Get the original PDF density/resolution, or fallback to 300dpi
-	# and we set it for extraction
+	# and we set it for extraction.
 	my $density = $im->Get('density');
+	print "Input PDF Density: $density\n" if ($ENV{DEBUG} == 1);
 	$density = '300' if !$density; 
-	$im->Set(density => $density);
+
+	my $width = $im->Get('width');
+	my $height = $im->Get('height');
+
+	if ($ENV{DEBUG} == 1) {
+		print "Processed PDF Density DPI: $density\n";
+		my $page_size = $im->Get('page');
+		print "PDF Width: $width, Height: $height, Page size: $page_size\n";
+	}
+
+	$self->{resolution} = $density;  # We need this for mergePDF later
 	
 	my $page_count = $im->Get('pages');
-	$page_count = 1 if !$page_count; # it is a single page pdf
+	print "We have $page_count pages in the PDF file.\n" if ($ENV{DEBUG} == 1);
+	# If we got nothing for $page_count, try to use image count instead
+	if (!$page_count) {
+		print "No pages found! Trying to use image count instead... " if ($ENV{DEBUG} == 1);
+		$page_count = scalar(@$im);
+		print "We have $page_count images in the PDF file.\n" if ($ENV{DEBUG} == 1);
+	}
+	# If we can't find page count either way, die (rather than generate incorrect PDF
+	# output)
+	die("Could not get number of image or pages in PDF! (got: $page_count)\n") if !$page_count;
 
-	# Process each page
-	for my $page_num (1..$page_count) {
-		# Create a copy of the image for this page matching
-		# the PDF original density
+	# Process each page, as its off by on (start 0) subtract from
+	# $page_count
+	for my $page_num (0..$page_count - 1) {
 		my $page_image = Image::Magick->new();
-		$page_image->Set(density => $density);
-		
-		# Set the page to extract (0-indexed)
-		$page_image->Set(page => $page_num - 1);
-		
-		my $error = $page_image->Read($pdfFile);
+		$page_image->Set('density' => $density);
+		$page_image->Set('define:pdf:use-cropbox=true');
+		$page_image->Set('define:pdf:flatten=true');
+
+		print "Reading in \"${pdfFile}[${page_num}]\"\n" if ($ENV{DEBUG} == 1);
+		my $page_error = $page_image->Read("${pdfFile}[${page_num}]");
 		if ($error) {
-			warn "Error reading page $page_num: $error";
-			next;
+			die "Error reading PDF page $page_num: $error\n";
 		}
+
+		if ($ENV{DEBUG} == 1) {
+			my $width = $page_image->Get('width');
+			my $height = $page_image->Get('height');
+			my $page_size = $page_image->Get('page');
+			print "Image Width: $width, Height: $height, Page size: $page_size\n";
+		}
+
+		$page_image->Set(page => $page_num);
 		my $filename = sprintf("%s/%s_%02d.png", 
 							  $self->{tempDIR}, 
 							  $self->{filePattern}, 
@@ -132,10 +160,10 @@ sub unpackPDF {
 		if ($write_error) {
 			warn "Error writing image $filename: $write_error";
 		}
-		$page_image->Destroy();
+		undef $page_image;  # Free the object
 	}
 	# Final cleanup
-	$im->Destroy();
+	undef $im;
 	
 	return 1;  # Success
 }
@@ -192,15 +220,11 @@ sub writeFormatBatch {
 }
 
 sub mergePDF {
-	# Unlike images, where each image has its OCR'd text in its EXIF header,
-	# PDFs are multipage and we can't set a comment per page, so what we have
-	# to do is load up all the OCR text files for each page, concatenate them
-	# and set the entire thing as a comment. I guess I will find out if the
-	# PDF spec sets a limit on comment size...
 
 	my $self = shift;
 	my $files = shift;
 	my $text = shift;
+	my $outPDF = shift;
 	if ($self->{OCR} == 1) {
 		# If despite OCR, we have no data, we update the text to indicate this
 		if ($text eq "") {
@@ -220,24 +244,53 @@ sub mergePDF {
 		"-define", q~pdf:Producer="SDAT - https://github.com/ZivaVatra/SDAT"~,
 		"-define", q~pdf:Author="SDAT - https://github.com/ZivaVatra/SDAT"~,
 		"-define", qq/pdf:Title="$self->{filePattern}"/,
-		"-define", qq/pdf:Keywords="$text"/,
 		"-compress", "lossless",
 		"-density", $self->{resolution},
-		"$self->{outDIR}/$self->{filePattern}.pdf");
+		$outPDF);
+
+#		"$self->{outDIR}/$self->{filePattern}.pdf");
+
+	$self->addPDFcomment($outPDF, $text);
+}
+
+sub addPDFcomment {
+	# Unlike images, where each image has its OCR'd text in its EXIF header,
+	# PDFs are multipage and we can't set a comment per page, so what we have
+	# to do is load up all the OCR text files for each page, concatenate them
+	# and set the entire thing as a comment. I guess I will find out if the
+	# PDF spec sets a limit on comment size...
+
+	my $self = shift;
+	my $outPDF = shift;
+	my $text = shift;
+
+	# Update the keywords
+	die("Failed to update keywords on PDF\n") if system(
+		"magick",
+		$outPDF, "-set", "pdf:keywords", $text, "$outPDF.new");
+
+	unlink($outPDF);
+	rename("$outPDF.new", $outPDF);
 
 	# From what I can see, PDF does not have the ability to set a comment field,
 	# however the PDF standard does support comments, you just have to prefix '%'
 	# Ideally done at the start of the PDF, but before the '%PDF-1.3' definition
 	my $pdfData;
-	open(FD, "$self->{outDIR}/$self->{filePattern}.pdf") or die("Failed to open PDF for read: $!");
+	open(FD, $outPDF) or die("Failed to open PDF for read: $!");
 	$pdfData = <FD>; # First line is our PDF definition
 	while(<FD>) {
 		$pdfData .= $_; #Load the rest as is
+
+		# Until we reach the "%%EOF" line, anything after that line
+		# is a previous comment to be ignored
+		if (m/%%EOF/) {
+			last;
+		}
 	};
-	$pdfData .= "%$text\n"; # We add our text as a single line PDF comment after EOF
+	$pdfData .= "%$text\n"; # We add our text as a PDF comment after EOF
 	close(FD);
 	# Now write the data back
-	open(FD, ">$self->{outDIR}/$self->{filePattern}.pdf") or die("Failed to open PDF for write: $!");
+	open(FD, ">$outPDF") or die("Failed to open PDF for write: $!");
 	print(FD $pdfData);
 	close(FD);
 	return 1;

@@ -60,10 +60,12 @@ $extension =~ tr/a-z/A-Z/;
 my @tessOpts = qw|-l eng|;
 my $core = SDAT::core->new({
 	tessOpts => \@tessOpts,
+	filePattern => "reprocess",
 	OCR => 1, # Enable OCR
 	ollamaEndpoint => "http://localhost:11434/api/generate",
 	OCRtype => $OCRtype,
-	outFormat => $extension
+	outFormat => $extension,
+	outDIR => $path  # We use the input path, to overwrite the original
 });
 
 if ($extension =~ m/pdf/i) {
@@ -73,9 +75,12 @@ if ($extension =~ m/pdf/i) {
 	# We append the OCR text from each image into a single string
 	my $OCRtext = "";
 	foreach(@images) {
+		print "$_\n";
 		$OCRtext .= $core->OCR($_);
 	}
-	$core->mergePDF(\@images, $OCRtext);
+	# We do not regenerate the PDF, but just add/replace the comment
+	# field
+	$core->addPDFcomment($target, $OCRtext);
 } elsif ($extension =~ m/png/i) {
 	my $text = $core->OCR($target);
 	# We overwrite the input file, but only
@@ -88,7 +93,7 @@ if ($extension =~ m/pdf/i) {
 $core->deleteTempDir();
 
 sub usage {
-	print(qq/Usage: $0 \$OCR_type ( "tesseract" or "ollama" ) \$target_file\n/);
+	print(qq/Usage: $0 \$OCR_type ( "tesseract" or "ollama" ) \$target_file \n/);
 	exit 1;
 }
 

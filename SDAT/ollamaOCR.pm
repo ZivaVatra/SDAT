@@ -21,7 +21,7 @@ sub new {
 	my $self = bless($arg, $class);
 	$self->{endpoint} //= "http://localhost:11434/api/generate";
 	$self->{model} //= "glm-ocr:latest";
-	$self->{DEBUG} //= 0;
+	$ENV{DEBUG} //= 0;
 	return $self;
 }
 
@@ -44,18 +44,18 @@ sub _resize_image_if_needed {
 	my $width = $image->Get('width');
 	my $height = $image->Get('height');
 	
-	print "Original image size: $width × $height\n" if ($self->{DEBUG} == 1);
+	print "Original image size: $width × $height\n" if ($ENV{DEBUG} == 1);
 	
 	# Check if resize is needed
 	if ($width > $max_size || $height > $max_size) {
-		print "Image is too large, resizing...\n" if ($self->{DEBUG} == 1);
+		print "Image is too large, resizing...\n" if ($ENV{DEBUG} == 1);
 		
 		# Calculate scaling factor while maintaining aspect ratio
 		my $scale = $max_size / ( $width > $height ? $width : $height );
 		my $new_width = int($width * $scale);
 		my $new_height = int($height * $scale);
 		
-		print "Resizing to: $new_width × $new_height\n" if ($self->{DEBUG} == 1);
+		print "Resizing to: $new_width × $new_height\n" if ($ENV{DEBUG} == 1);
 		
 		# Resize the image
 		$image->Scale(width => $new_width, height => $new_height);
@@ -70,10 +70,10 @@ sub _resize_image_if_needed {
 			die "Failed to write resized image: $status\n";
 		}
 		
-		print "Resized image saved to: $output_path\n" if ($self->{DEBUG} == 1);
+		print "Resized image saved to: $output_path\n" if ($ENV{DEBUG} == 1);
 		return $output_path;
 	} else {
-		print "Image size is within limits, no resizing needed\n" if ($self->{DEBUG} == 1);
+		print "Image size is within limits, no resizing needed\n" if ($ENV{DEBUG} == 1);
 		return $image_path;
 	}
 }
@@ -89,13 +89,13 @@ sub OCR {
 	my $image_data = read_file($processed_image, binmode => ':raw');
 	my $encoded_image = encode_base64($image_data, '');
 	
-	print "Sending image to OCR model...\n" if ($self->{DEBUG} == 1);
+	print "Sending image to OCR model...\n" if ($ENV{DEBUG} == 1);
 	
 	# Send request to ollama and await response
 	my $ua = LWP::UserAgent->new(timeout => 120);
 	my $request_data = {
 		model => $self->{model},
-		prompt => "Extract all text from this image. Return only the text content without any additional explanation or formatting.",
+		prompt => "Extract all text from this image. Return only the text content without any additional explanation or formatting. If you can not extract the text respond with 'Cannot OCR text' only.",
 		images => [$encoded_image],
 		stream => JSON::false,
 		options => {
@@ -112,7 +112,7 @@ sub OCR {
 	
 	# Clean up the temporary resized image
 	if ($processed_image ne $image_path) {
-		print "Cleaning up temporary resized image: $processed_image\n" if ($self->{DEBUG} == 1);
+		print "Cleaning up temporary resized image: $processed_image\n" if ($ENV{DEBUG} == 1);
 		unlink $processed_image or warn "Warning: Could not delete $processed_image: $!";
 	}
 	
@@ -120,14 +120,14 @@ sub OCR {
 		my $json_response = from_json($response->decoded_content);
 	
 		if (exists $json_response->{response} && $json_response->{response}) {
-			if ($self->{DEBUG} == 1) {	
+			if ($ENV{DEBUG} == 1) {	
 				print "\n=== OCR RESULT ===\n";
 				print $json_response->{response};
 				print "\n";
 			}
 			return $json_response->{response};
 		} else {
-			if ($self->{DEBUG} == 1) {	
+			if ($ENV{DEBUG} == 1) {	
 				print "\n=== NO TEXT FOUND ===\n";
 				print "The model returned no text content.\n";
 				print "Response details: " . $response->decoded_content . "\n";
