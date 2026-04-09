@@ -22,12 +22,12 @@
 #
 #You should have received a copy of the GNU General Public License
 #along with this program; if not, write to the Free Software
-#Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.    #
+#Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA	02110-1301, USA.    #
 # All rights reserved
 # ============================================================================|
 #
 # Class conventions used:
-# 	- Understore prefix for private subroutines
+#	- Understore prefix for private subroutines
 #
 
 ### BEGIN Class ###
@@ -37,10 +37,11 @@ $Forks::Super::ON_BUSY = 'block';
 use Data::GUID;
 use File::Path qw(make_path rmtree);
 use File::Copy qw(move);
+use File::Slurp qw(write_file read_file);
 package SDAT::core;
 
 # Constructor options
-# Format: "key" (type:default)  //comment
+# Format: "key" (type:default)	//comment
 #	"resolution" (integer)
 #	"outDIR" (string)
 #	"filePattern" (string)
@@ -121,12 +122,12 @@ sub writeFormatBatch {
 			$outName =~ s/$self->{tempDIR}//g;
 			print "move $_ to $self->{outDIR}/$outName\n";
 			File::Copy::move($_,"$self->{outDIR}/$outName");
-    		if ($!{EINTR}) {
+		if ($!{EINTR}) {
 				# Sometimes we get interrupted system calls, but the files is moved
 				# anyway, so we check to see if the file exists at destination
 				# before retrying
 				if ( not -f "$self->{outDIR}/$outName" ) {
-			        warn "File move interrupted, retrying...\n";
+				warn "File move interrupted, retrying...\n";
 					push(@files, $_); # re-add the failed file to the bottom of list
 				}
 			} else {
@@ -134,11 +135,11 @@ sub writeFormatBatch {
 			}
 		}
 		return 1;
-	}
-}
+	/
+i
 
 
-sub mergePDF {
+su mergePDF {
 	# Unlike images, where each image has its OCR'd text in its EXIF header, PDFs are multipage
 	# and we can't set a comment per page, so what we have to do is load up all the OCR text files
 	# for each page, concatenate them and set the entire thing as a comment. I guess I will find out
@@ -202,12 +203,22 @@ sub mergePDF {
 
 sub OCR {
 	my $self = shift;
-    my $inputImage = shift;
+	my $inputImage = shift;
 
 	if ($self->{OCRtype} == "tesseract") {
 		$self->tessOCR($inputImage);
 	} elsif ($self->{OCRtype} == "ollama") {
-		warn("Ollama NOT IMPLEMENTED YET\n")
+		die("Please set ollamaENDPOINT environment variable!\n") unless ($ENV{ollamaENDPOINT});
+		use SDAT::ollamaOCR;
+		$inst = SDAT::ollamaOCR->new({
+			endpoint => $ENV{ollamaENDPOINT}
+		});
+		$text = $inst->OCR($inputImage);
+		# This is for compatibility with existing tesseract logic
+		write_file("$inputImage.txt", $text);
+
+	} else {
+		die("OCR type '$self->{OCRtype}' not recognised.\n");
 	}
 }
 
@@ -234,12 +245,7 @@ sub _writeExif {
 	if ($self->{OCR} == 1) {
 		my $textFile = "$file.txt";
 		warn("Unable to find OCR text for '$file'! Cannot add to Exif data.") unless (-f $textFile);
-		open(FD, $textFile);
-		while(<FD>){
-			chomp;
-			$text .= $_;
-		}
-		close(FD);
+		$text = read_file($textFile);
 		# If despite OCR, we have no data, we update the text to indicate this
 		if ($text eq "") {
 			$text = "NO OCR DATA captured";

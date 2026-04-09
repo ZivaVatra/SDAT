@@ -41,21 +41,32 @@
 #
 
 use strict;
+use File::Basename;
 
-# Extra options for tesseract
-our $TESSOPTS=" --tessdata-dir /usr/share/tesseract-ocr/4.00/tessdata/ -l eng ";
-
-require "./lib/core.pm";
-
-sub usage {
-	die("Usage: $0 \$target_file\n");
-}
 
 my $target = shift or usage();
-
 die("Can't find file\n") unless (-f $target);
+
+my ($name, $path, $extension) = fileparse($target, qr/\.[^.]*/);
+# Remove the leading dot 
+$extension =~ s/^.// if $extension;
+
+# We use the extension of the input image to work out the output format (as it should match)
+
+my $core = SDAT::core->new({
+	tessOpts => " --tessdata-dir /usr/share/tesseract-ocr/4.00/tessdata/ -l eng "
+	outFormat => $extension
+});
+
+$core->OCR($target);
+$core->
 
 ocrit($target, "/tmp/ocr_text", $TESSOPTS);
 addComment("/tmp/ocr_text.txt", $target);
 unlink("/tmp/ocr_text.txt");
+
+
+sub usage {
+	die("Usage: $0 \$target_file\n");
+}
 
