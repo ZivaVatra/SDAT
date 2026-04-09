@@ -27,7 +27,7 @@
 # ============================================================================|
 #
 # Class conventions used:
-#	- Understore prefix for private subroutines
+# - Underscore prefix for private subroutines
 #
 
 ### BEGIN Class ###
@@ -48,6 +48,7 @@ package SDAT::core;
 #	"scanOpts" (list)
 #	"device" (string)
 #	"tessOpts" (list)
+#	"ollamaEndpoint" (string)
 #	"OCRtype" (string)
 #	"OCR" (bool)
 #	"enableADF" (bool:0)
@@ -74,9 +75,7 @@ sub _checkDeps {
 	# Check if all the binaries we need are available
 	my @deps = (
 		"scanimage",
-		"tesseract",
 		"magick",
-		"img2pdf",
 		"exiv2"
 	);
 	foreach(@deps) {
@@ -87,9 +86,9 @@ sub _checkDeps {
 }
 
 sub unpackPDF {
-	""" This subroutine unpacks a PDF file into images following the internal
-	directory structure, so we can OCR it. Used primarily for reprocessing
-	existing scans """
+	# This subroutine unpacks a PDF file into images following the internal
+	# directory structure, so we can OCR it. Used primarily for reprocessing
+	# existing scans
 	my $self = shift;
 	my $pdfFile = shift;
 	
@@ -136,7 +135,7 @@ sub unpackPDF {
 		$page_image->Destroy();
 	}
 	# Final cleanup
-	$image->Destroy();
+	$im->Destroy();
 	
 	return 1;  # Success
 }
@@ -159,10 +158,10 @@ sub writeFormatBatch {
 	my $self = shift;
 	my @files = glob("$self->{tempDIR}/$self->{filePattern}*.png");
 
-	if ($self->{OCR} == 1) {
-		Forks::Super::pmap { $self->OCR($_) } {timeout => 120}, @files;
-	}
-	Forks::Super::waitall();
+#	if ($self->{OCR} == 1) {
+#		Forks::Super::pmap { $self->OCR($_) } {timeout => 120}, @files;
+#	}
+#	Forks::Super::waitall();
 
 	if ($self->{outFormat} =~ m/PDF/i) {
 		return $self->mergePDF(\@files);
@@ -189,31 +188,20 @@ sub writeFormatBatch {
 			}
 		}
 		return 1;
-	/
-i
-
+	}
+}
 
 sub mergePDF {
-	# Unlike images, where each image has its OCR'd text in its EXIF header, PDFs are multipage
-	# and we can't set a comment per page, so what we have to do is load up all the OCR text files
-	# for each page, concatenate them and set the entire thing as a comment. I guess I will find out
-	# if the PDF spec sets a limit on comment size...
+	# Unlike images, where each image has its OCR'd text in its EXIF header,
+	# PDFs are multipage and we can't set a comment per page, so what we have
+	# to do is load up all the OCR text files for each page, concatenate them
+	# and set the entire thing as a comment. I guess I will find out if the
+	# PDF spec sets a limit on comment size...
 
-	my $text = "";
 	my $self = shift;
 	my $files = shift;
+	my $text = shift;
 	if ($self->{OCR} == 1) {
-		foreach my $file (@{$files}) {
-			print "mergePDF: $file\n";
-			my $textFile = "$file.txt";
-			warn("Unable to find OCR text for '$file'! Cannot add to PDF.") unless (-f $textFile);
-			open(FD, $textFile);
-			while(<FD>){
-				chomp;
-				$text .= "$_ ";
-			}
-			close(FD);
-		}
 		# If despite OCR, we have no data, we update the text to indicate this
 		if ($text eq "") {
 			$text = "NO OCR DATA captured";
@@ -256,22 +244,21 @@ sub mergePDF {
 }
 
 sub OCR {
-	""" This will OCR a given image file, and return the text. Only image files supported """
+	# This will OCR a given image file, and return the text. Only image files supported
 	my $self = shift;
 	my $inputImage = shift;
 	my $text = "";
 
-	if ($self->{OCRtype} == "tesseract") {
+	if ($self->{OCRtype} =~ m/tesseract/) {
 		use SDAT::tessOCR;
 		my $inst = SDAT::tessOCR->new({
 			tessOpts => $self->{tessOpts}
 		});
-		return $inst->tessOCR($inputImage);
-	} elsif ($self->{OCRtype} == "ollama") {
-		die("Please set ollamaENDPOINT environment variable!\n") unless ($ENV{ollamaENDPOINT});
+		return $inst->OCR($inputImage);
+	} elsif ($self->{OCRtype} =~ m/ollama/) {
 		use SDAT::ollamaOCR;
-		$inst = SDAT::ollamaOCR->new({
-			endpoint => $ENV{ollamaENDPOINT}
+		my $inst = SDAT::ollamaOCR->new({
+			endpoint => $self->{ollamaEndpoint}
 		});
 		return $inst->OCR($inputImage);
 
@@ -283,12 +270,9 @@ sub OCR {
 sub _writeExif {
 	my $self = shift;
 	my $file = shift;
-	my $text = "";
+	my $text = shift;
 
 	if ($self->{OCR} == 1) {
-		my $textFile = "$file.txt";
-		warn("Unable to find OCR text for '$file'! Cannot add to Exif data.") unless (-f $textFile);
-		$text = read_file($textFile);
 		# If despite OCR, we have no data, we update the text to indicate this
 		if ($text eq "") {
 			$text = "NO OCR DATA captured";
@@ -297,8 +281,7 @@ sub _writeExif {
 		print "OCR disabled, skipping.\n";
 		$text = "OCR disabled";
 	}
-
-	die("EXIT write failed: $!") if system(
+	die("EXIF write failed: $!") if system(
 		"exiv2", "-M",
 		qq/set Exif.Photo.UserComment charset=Unicode $text/,
 		$file
@@ -319,5 +302,5 @@ sub DESTROY {
 
 
 
-1;	# End of file
+1; # End of file
 

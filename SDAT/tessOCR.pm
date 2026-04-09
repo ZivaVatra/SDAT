@@ -30,9 +30,10 @@
 #
 
 ### BEGIN Class ###
+package SDAT::tessOCR;
+
 use strict;
 use File::Slurp qw(write_file read_file);
-package SDAT::tessOCR;
 
 # Constructor options
 # Format: "key" (type:default)	//comment
@@ -49,9 +50,6 @@ sub _checkDeps {
 	# Check if all the binaries we need are available
 	my @deps = (
 		"tesseract",
-		"magick",
-		"img2pdf",
-		"exiv2"
 	);
 	foreach(@deps) {
 		die("\"$_\" not found in \$PATH, cannot continue\n") if system(

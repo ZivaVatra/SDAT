@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 # vim: ts=4 ai
 # SDAT - Scanned document archival tool
 #
@@ -42,31 +42,53 @@
 
 use strict;
 use File::Basename;
+use lib "./";
+use SDAT::core;
 
-
+my $OCRtype = shift or usage();
 my $target = shift or usage();
+
 die("Can't find file\n") unless (-f $target);
 
 my ($name, $path, $extension) = fileparse($target, qr/\.[^.]*/);
-# Remove the leading dot 
+# Remove the leading dot and convert to all upper case
 $extension =~ s/^.// if $extension;
+$extension =~ tr/a-z/A-Z/;
 
 # We use the extension of the input image to work out the output format (as it should match)
 
+my @tessOpts = qw|-l eng|;
 my $core = SDAT::core->new({
-	tessOpts => " --tessdata-dir /usr/share/tesseract-ocr/4.00/tessdata/ -l eng "
+	tessOpts => \@tessOpts,
+	OCR => 1, # Enable OCR
+	ollamaEndpoint => "http://localhost:11434/api/generate",
+	OCRtype => $OCRtype,
 	outFormat => $extension
 });
 
-$core->OCR($target);
-$core->
+if ($extension =~ m/pdf/i) {
+	# unpack the PDF and get a list of images to process further
+	$core->unpackPDF($target);
+	my @images = glob("$core->{tempDIR}/$core->{filePattern}*.png");
+	# We append the OCR text from each image into a single string
+	my $OCRtext = "";
+	foreach(@images) {
+		$OCRtext .= $core->OCR($_);
+	}
+	$core->mergePDF(\@images, $OCRtext);
+} elsif ($extension =~ m/png/i) {
+	my $text = $core->OCR($target);
+	# We overwrite the input file, but only
+	$core->_writeExif($target, $text);
+} else {
+	die("Extension $extension unknown, cannot continue!\n");
+}
 
-ocrit($target, "/tmp/ocr_text", $TESSOPTS);
-addComment("/tmp/ocr_text.txt", $target);
-unlink("/tmp/ocr_text.txt");
-
+# Cleanup
+$core->deleteTempDir();
 
 sub usage {
-	die("Usage: $0 \$target_file\n");
+	print(qq/Usage: $0 \$OCR_type ( "tesseract" or "ollama" ) \$target_file\n/);
+	exit 1;
 }
 
