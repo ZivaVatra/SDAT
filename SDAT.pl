@@ -32,23 +32,20 @@
 # for easier searching, while keeping the original text+format as an image scan.
 # It saves a PNG file into the $FINALDST folder
 
-# Requirements:
-#	tesseract (OCR)
-#	sane-tools (SCANNING)
-#	Exiv2 image metadata library (for adding text to comment field)
-#	imageMagick tools (FORMAT CONVERSION)
-#
 
 use strict;
-use lib "./";
-use SDAT::core;
-
 use POSIX "sys_wait_h";
-use File::Path "make_path";
-use File::Basename "fileparse";
+use FindBin;
+
+use lib "$FindBin::Bin";
+use SDAT::core;
 
 # Global defaults
 our $SCAN_DPI=0;
+our $OCR_BACKEND="tesseract";
+our $OCR_ENABLED=1;
+our $OLLAMA_ENDPOINT=undef;
+our $TEMP_DIR="/tmp/SDAT/";
 # Extra options for scanimage, for specific scanners
 our $DEVICE;
 our @EXTRAOPTS;
@@ -58,16 +55,17 @@ our $OUTFORMAT = "null";
 # Extra options for tesseract
 our @TESSOPTS=("-l", "eng");
 our $ENABLE_DUPLEX=1;
+
+# The above variables can be overriden by the settings file, which
+# is done here
+if (-f "$FindBin::Bin/settings.pm") {
+	require "$FindBin::Bin/settings.pm";
+}
+
 # We define this here so that it is available in the config file.
 # We don't assign a value however until we have the "scanCore" class
 # instantiated, after which we know what the temp path will be
 our $TEMPDIR; 
-# options
-our $NO_OCR = 0;
-if (defined($ENV{'SDAT_NO_OCR'})) {
-	$NO_OCR = $ENV{'SDAT_NO_OCR'};
-}
-our $OCR_ENABLED = not $NO_OCR; # backwards compatibility, NO_OCR is deprecated and will be removed in future
 
 sub usage {
 	die("Usage: $0 \$configuration_file \$scanner_file \$target_folder \$target_scan_filename\n");
@@ -90,10 +88,6 @@ die "Couldn't interpret the scanner profile file ($SPROFILE) that was given.\nEr
 die("Invalid configuration file detected, cannot continue.\n") if $SCAN_DPI == 0;
 die("Invalid scanner profile detected, cannot continue.\n") unless defined($DEVICE);
 
-
-
-my $RANDSTR=`head -c 20 /dev/urandom  | md5sum | cut -d' ' -f 1`;
-$RANDSTR =~ s/\n//g;
 $NAME =~ s/\n//g;
 
 # We have to make sure that if the job requests ADF support, 
@@ -114,9 +108,12 @@ my $scanCore = SDAT::core->new({
 	"device" => $DEVICE,
 	"tessOpts" => \@TESSOPTS,
 	"OCR" => $OCR_ENABLED,
+	"OCRtype" => $OCR_BACKEND,
+	"ollamaEndpoint" => $OLLAMA_ENDPOINT,
 	"enableADF" => $ADF_ENABLED,
 	"duplex" => $ENABLE_DUPLEX,
 	"outFormat" => $OUTFORMAT,
+	"tmpDIR" => $TEMP_DIR
 	});
 
 # Assigned so that it is available to callback_last;
