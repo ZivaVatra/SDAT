@@ -44,11 +44,17 @@ use strict;
 use File::Basename;
 use lib "./";
 use SDAT::core;
+use FindBin;
 
 my $OCRtype = shift or usage();
 my $target = shift or usage();
+our $OLLAMA_ENDPOINT = "http://localhost:11434/api/generate";
 
 die("Can't find file\n") unless (-f $target);
+
+if (-f "$FindBin::Bin/settings.pm") {
+        require "$FindBin::Bin/settings.pm";
+} 
 
 my ($name, $path, $extension) = fileparse($target, qr/\.[^.]*/);
 # Remove the leading dot and convert to all upper case
@@ -62,7 +68,7 @@ my $core = SDAT::core->new({
 	tessOpts => \@tessOpts,
 	filePattern => "reprocess",
 	OCR => 1, # Enable OCR
-	ollamaEndpoint => "http://localhost:11434/api/generate",
+	ollamaEndpoint => $OLLAMA_ENDPOINT,
 	OCRtype => $OCRtype,
 	outFormat => $extension,
 	outDIR => $path  # We use the input path, to overwrite the original

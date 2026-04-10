@@ -63,6 +63,7 @@ sub new {
 	my $self = bless($arg, $class);
 
 	die("OCR enabled but no OCR backend selected\n") if (($self->{OCR} == 1) and (!$self->{OCRtype}));
+	$self->{tmpDIR} = "/tmp/SDAT" unless ($self->{tmpDIR});
 	my $GUID = Data::GUID->new()->as_string();
 	$self->{tempDIR} = "$self->{tmpDIR}/$GUID";
 	File::Path::make_path($self->{tempDIR}) unless (-d $self->{tempDIR});
