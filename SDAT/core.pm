@@ -229,6 +229,12 @@ sub mergePDF {
 	my $files = shift;
 	my $text = shift;
 	my $outPDF = shift or die("No output filename given!");
+
+	# Check if we have the pdf extension already,and add it if not
+	chomp $outPDF;
+	if ($outPDF !~ m/\.pdf$/) {
+		$outPDF .= ".pdf";
+	}
 	if ($self->{OCR} == 1) {
 		# If despite OCR, we have no data, we update the text to indicate this
 		if ($text eq "") {
@@ -282,7 +288,8 @@ sub addPDFcomment {
 	# however the PDF standard does support comments, you just have to prefix '%'
 	# Ideally done at the start of the PDF, but before the '%PDF-1.3' definition
 	my $pdfData;
-	open(FD, $outPDF) or die("Failed to open PDF for read: $!");
+	print "Opening PDF file $outPDF to read in data\n" if ($ENV{DEBUG} == 1);
+	open(FD, $outPDF) or die("Failed to open PDF for reading: $!");
 	$pdfData = <FD>; # First line is our PDF definition
 	while(<FD>) {
 		$pdfData .= $_; #Load the rest as is
@@ -292,7 +299,8 @@ sub addPDFcomment {
 		if (m/%%EOF/) {
 			last;
 		}
-	};
+	}
+	print "Added PDF comment with our OCR'd data.\n" if ($ENV{DEBUG} == 1);;
 	$pdfData .= "%$text\n"; # We add our text as a PDF comment after EOF
 	close(FD);
 	# Now write the data back
@@ -350,11 +358,11 @@ sub _writeExif {
 	if ($self->{OCR} == 1) {
 		# If despite OCR, we have no data, we update the text to indicate this
 		if ($text eq "") {
-			$text = "NO OCR DATA captured";
+			$text = "[NO OCR DATA captured]";
 		}
 	} else {
 		print "OCR disabled, skipping.\n";
-		$text = "OCR disabled";
+		$text = "[OCR disabled]";
 	}
 	die("EXIF write failed: $!") if system(
 		"exiv2", "-M",
