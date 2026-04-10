@@ -93,7 +93,7 @@ if ($extension =~ m/pdf/i) {
 $core->deleteTempDir();
 
 sub usage {
-	print(qq/Usage: $0 \$OCR_type ( "tesseract" or "ollama" ) \$target_file \n/);
+	print(qq/Usage: $0 \$OCR_backend ( "tesseract" or "ollama" ) \$target_file \n/);
 	exit 1;
 }
 
