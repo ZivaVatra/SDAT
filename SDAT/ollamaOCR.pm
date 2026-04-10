@@ -30,7 +30,13 @@ sub _resize_image_if_needed {
 	my $image_path = shift;
 	# Above 2048px the glm-ocr model goes a bit screwy. 1024 is decent
 	# but anything <2048 that is divisible by 16 will work. higher resolutions
-	# will pick out smaller writing and better OCR, but longer execution time
+	# will pick out smaller writing and better OCR, but longer execution time.
+	#
+	# Although I've found that I get 500 errors (assertion errors) on sizes
+	# >= 1600, hence we stick with a smaller size.
+	#
+	# Update: seems others have noticed this: https://github.com/ollama/ollama/issues/14171
+	#
 	my $max_size = 1600;
 
 	# Read image with Image::Magick to get dimensions
@@ -95,7 +101,7 @@ sub OCR {
 	my $ua = LWP::UserAgent->new(timeout => 120);
 	my $request_data = {
 		model => $self->{model},
-		prompt => "Extract all text from this image. Return only the text content without any additional explanation or formatting. If you can not extract the text respond with 'Cannot OCR text' only.",
+		prompt => "Text Recognition: Extract all text from this image and return only the text content without any additional explanation or formatting. If you can not extract the text respond with 'Cannot OCR text' only.",
 		images => [$encoded_image],
 		stream => JSON::false,
 		options => {

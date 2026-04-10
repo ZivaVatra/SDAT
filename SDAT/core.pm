@@ -89,7 +89,21 @@ sub _checkDeps {
 	}
 }
 
+sub unpackPDF_TEST {
+	# This is here to test against the native perl code below.in case of issues.
+	my $self = shift;
+	my $pdfFile = shift;
+
+	die("Could not extract PDF pages: $!\n") if system(
+		"magick", "-density", 400, "-quality", 100, $pdfFile, "$self->{tempDIR}/$self->{filePattern}-%04d.png");
+}
+
 sub unpackPDF {
+	# Despite my best efforts, the below keeps extracting tiny thumbnail 
+	# versions of the PDF, rather than the actual high resolution pages.
+	# For the moment I've given up and am just using the command line version
+	# to unpack the PDF (see above)
+
 	# This subroutine unpacks a PDF file into images following the internal
 	# directory structure, so we can OCR it. Used primarily for reprocessing
 	# existing scans
@@ -104,11 +118,11 @@ sub unpackPDF {
 	if ($error) {
 		die "Error reading PDF file: $error\n";
 	}
-	# Get the original PDF density/resolution, or fallback to 300dpi
-	# and we set it for extraction.
-	my $density = $im->Get('density');
-	print "Input PDF Density: $density\n" if ($ENV{DEBUG} == 1);
-	$density = '300' if !$density; 
+
+	# We tried to use the original density from the PDF, but it was buggy, resulting
+	# in too small output for OCR, so we hard coded 400DPI for density, which seems
+	# to be high enough for good re-OCR-ing of the scan.
+	my $density = '400'; 
 
 	my $width = $im->Get('width');
 	my $height = $im->Get('height');
@@ -119,8 +133,6 @@ sub unpackPDF {
 		print "PDF Width: $width, Height: $height, Page size: $page_size\n";
 	}
 
-	$self->{resolution} = $density;  # We need this for mergePDF later
-	
 	my $page_count = $im->Get('pages');
 	print "We have $page_count pages in the PDF file.\n" if ($ENV{DEBUG} == 1);
 	# If we got nothing for $page_count, try to use image count instead
