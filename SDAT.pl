@@ -34,7 +34,7 @@
 
 
 use strict;
-use POSIX "sys_wait_h";
+use POSIX qw/sys_wait_h/;
 use FindBin;
 
 use lib "$FindBin::Bin";
@@ -134,14 +134,18 @@ while(1) {
 	sleep(1);
 
 	# Loop through images, for each one do the OCR, and move to dest
-	my @outfiles = glob("$scanCore->{tmpDIR}/$scanCore->{filePattern}*.png");
+	my @outfiles = glob("$scanCore->{tempDIR}/$scanCore->{filePattern}*.png");
 	# As long as the scanning pid is not dead, reset
 	# counter
 	if (waitpid($pid, WNOHANG) != -1) {
 		$counter = 3;
 	}
+
 	if(@outfiles) {
-		Forks::Super::pmap { $scanCore->OCR($_) } {timeout => 120}, @outfiles;
+		Forks::Super::pmap { 
+			print "Debug: Requesting OCR OF $_ to $_.txt\n" if ($ENV{DEBUG} == 1);
+			$scanCore->OCR($_, "$_.txt");
+	       	} {timeout => 120}, @outfiles;
 	}
 	
 	print("Waiting for processing pid\n");
@@ -160,7 +164,7 @@ if (defined(&callback_last)) {
 }
 
 # When all processing is complete, we write out our PNGs or PDFs
-$scanCore->writeFormatBatch() or die("Could not write output!");
+$scanCore->writeFormatBatch("$FINALDST/$NAME") or die("Could not write output!");
 
 $scanCore->deleteTempDir();
 

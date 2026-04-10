@@ -34,11 +34,11 @@
 use strict;
 use Forks::Super;
 $Forks::Super::ON_BUSY = 'block';
+package SDAT::core;
 use Data::GUID;
 use File::Path qw(make_path rmtree);
 use File::Copy qw(move);
 use File::Slurp qw(write_file read_file);
-package SDAT::core;
 
 # Constructor options
 # Format: "key" (type:default)	//comment
@@ -61,6 +61,7 @@ sub new {
 	my ($class, $arg) = @_;
 	my $self = bless($arg, $class);
 
+	die("OCR enabled but no OCR backend selected\n") if (($self->{OCR} == 1) and (!$self->{OCRtype}));
 	my $GUID = Data::GUID->new()->as_string();
 	$self->{tempDIR} = "$self->{tmpDIR}/$GUID";
 	File::Path::make_path($self->{tempDIR}) unless (-d $self->{tempDIR});
@@ -185,18 +186,27 @@ sub scan {
 
 sub writeFormatBatch {
 	my $self = shift;
+	my $outPDF = shift;
 	my @files = glob("$self->{tempDIR}/$self->{filePattern}*.png");
-
 #	if ($self->{OCR} == 1) {
 #		Forks::Super::pmap { $self->OCR($_) } {timeout => 120}, @files;
 #	}
 #	Forks::Super::waitall();
 
 	if ($self->{outFormat} =~ m/PDF/i) {
-		return $self->mergePDF(\@files);
+		my @txtFiles = glob("$self->{tempDIR}/$self->{filePattern}*.txt");
+
+		# We read in and concatinate all the text files for PDF
+		my $text = "";
+		foreach(@txtFiles) {
+			$text .= read_file($_);
+		}
+
+		return $self->mergePDF(\@files, $text, $outPDF);
 	} else {
 		Forks::Super::pmap { 
-			$self->_writeExif($_);
+			my $text = read_file("$_.txt");
+			$self->_writeExif($_, $text);
 		} {timeout => 120}, @files;
 		Forks::Super::waitall();
 		foreach(@files) {
@@ -225,7 +235,7 @@ sub mergePDF {
 	my $self = shift;
 	my $files = shift;
 	my $text = shift;
-	my $outPDF = shift;
+	my $outPDF = shift or die("No output filename given!");
 	if ($self->{OCR} == 1) {
 		# If despite OCR, we have no data, we update the text to indicate this
 		if ($text eq "") {
@@ -249,9 +259,10 @@ sub mergePDF {
 		"-density", $self->{resolution},
 		$outPDF);
 
-#		"$self->{outDIR}/$self->{filePattern}.pdf");
+#	"$self->{outDIR}/$self->{filePattern}.pdf");
 
 	$self->addPDFcomment($outPDF, $text);
+	return $outPDF;
 }
 
 sub addPDFcomment {
@@ -266,12 +277,13 @@ sub addPDFcomment {
 	my $text = shift;
 
 	# Update the keywords
-	die("Failed to update keywords on PDF\n") if system(
-		"magick",
-		$outPDF, "-set", "pdf:keywords", $text, "$outPDF.new");
-
-	unlink($outPDF);
-	rename("$outPDF.new", $outPDF);
+	#my $keywords = $text;
+	#$keywords =~ s/\n/ /g;	#can't have newlines in keywords
+	#die("Failed to update keywords on PDF\n") if system(
+	#		"magick",
+	#		$outPDF, "-set", "pdf:keywords", $keyword
+	#unlink($outPDF);
+	#rename("$outPDF.new", $outPDF);
 
 	# From what I can see, PDF does not have the ability to set a comment field,
 	# however the PDF standard does support comments, you just have to prefix '%'
@@ -298,22 +310,38 @@ sub addPDFcomment {
 }
 
 sub OCR {
-	# This will OCR a given image file, and return the text. Only image files supported
+	# This will OCR a given image file and return the text. 
+	# Only image files supported
 	my $self = shift;
 	my $inputImage = shift;
-	my $text = "";
+	# Optional file to write output to, would return text otherwise. 
+	# Will skip OCR if file exists already
+	my $outfile = shift;  
 
 	if ($self->{OCRtype} =~ m/tesseract/) {
 		use SDAT::tessOCR;
 		my $inst = SDAT::tessOCR->new({
 			tessOpts => $self->{tessOpts}
 		});
+		if ($outfile) {
+			return 1 if (-f $outfile);
+			my $text = $inst->OCR($inputImage);
+			write_file($outfile, $text);
+			return 1;
+		} 
 		return $inst->OCR($inputImage);
 	} elsif ($self->{OCRtype} =~ m/ollama/) {
 		use SDAT::ollamaOCR;
 		my $inst = SDAT::ollamaOCR->new({
 			endpoint => $self->{ollamaEndpoint}
 		});
+		if ($outfile) {
+			return 1 if (-f $outfile);
+			my $text = $inst->OCR($inputImage);
+			write_file($outfile, $text);
+			return 1;
+		} 
+
 		return $inst->OCR($inputImage);
 
 	} else {
@@ -344,7 +372,7 @@ sub _writeExif {
 
 sub deleteTempDir {
 	my $self = shift;
-	File::Path::rmtree($self->{tempDIR});
+	#File::Path::rmtree($self->{tempDIR});
 }
 
 # Destructor
