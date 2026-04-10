@@ -52,6 +52,7 @@ package SDAT::core;
 #	"OCRtype" (string)
 #	"OCR" (bool)
 #	"enableADF" (bool:0)
+#	"tmpDIR" (string) // The base temporary directory (default /tmp/SDAT)
 #	"duplex" (bool:1) //this only applies if there is an Auto document feeder
 #	"outFormat" (string:[png/pdf]) // we now limit to only these two
 
@@ -61,7 +62,7 @@ sub new {
 	my $self = bless($arg, $class);
 
 	my $GUID = Data::GUID->new()->as_string();
-	$self->{tempDIR} = "/tmp/SDAT/$GUID";
+	$self->{tempDIR} = "$self->{tmpDIR}/$GUID";
 	File::Path::make_path($self->{tempDIR}) unless (-d $self->{tempDIR});
 	File::Path::make_path($self->{outDIR}) unless (-d $self->{outDIR});
 	die("Output format $self->{outFormat} not valid, only PNG and PDF supported\n") unless (
