@@ -37,6 +37,7 @@ $Forks::Super::ON_BUSY = 'block';
 package SDAT::core;
 use Data::GUID;
 use File::Path qw(make_path rmtree);
+use File::Basename "fileparse";
 use File::Copy qw(move);
 use File::Slurp qw(write_file read_file);
 
@@ -206,25 +207,16 @@ sub writeFormatBatch {
 	} else {
 		Forks::Super::pmap { 
 			my $text = read_file("$_.txt");
+			print "Writing exif for $_ (from $_.txt)\n" if ($ENV{DEBUG} == 1);
 			$self->_writeExif($_, $text);
 		} {timeout => 120}, @files;
 		Forks::Super::waitall();
+
 		foreach(@files) {
-			my $outName = $_;
-			$outName =~ s/$self->{tempDIR}//g;
-			print "move $_ to $self->{outDIR}/$outName\n";
-			File::Copy::move($_,"$self->{outDIR}/$outName");
-		if ($!{EINTR}) {
-				# Sometimes we get interrupted system calls, but the files is moved
-				# anyway, so we check to see if the file exists at destination
-				# before retrying
-				if ( not -f "$self->{outDIR}/$outName" ) {
-				warn "File move interrupted, retrying...\n";
-					push(@files, $_); # re-add the failed file to the bottom of list
-				}
-			} else {
-				die("Failed to move file '$_': $!");
-			}
+			my ($filename, $dirs, $suffix) = fileparse($_);
+			my $outPath = "$self->{outDIR}/$filename";
+			print "move $_ to $outPath\n";
+			File::Copy::move($_,$outPath);
 		}
 		return 1;
 	}
@@ -372,7 +364,11 @@ sub _writeExif {
 
 sub deleteTempDir {
 	my $self = shift;
-	#File::Path::rmtree($self->{tempDIR});
+	if ($ENV{DEBUG} == 1) {
+		print "Preserving $self->{tempDIR} for debugging.\n";
+	} else {
+		File::Path::rmtree($self->{tempDIR});
+	}
 }
 
 # Destructor
